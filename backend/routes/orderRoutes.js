@@ -21,6 +21,14 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
       const product = await Product.findById(it.productId);
       if (!product) return res.status(404).json({ message: `Product ${it.productId} not found` });
       const qty = Number(it.qty) || 1;
+      
+      // Check if enough stock is available for the requested quantity
+      if (product.stock < qty) {
+        return res.status(400).json({ 
+          message: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${qty}` 
+        });
+      }
+      
       orderItems.push({
         product: product._id,
         retailer: product.retailer,
@@ -78,6 +86,37 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
       (i) => String(i.product) === String(productId) && String(i.retailer) === String(req.user._id)
     );
     if (!item) return res.status(403).json({ message: "Item not found for this retailer" });
+
+    const previousStatus = item.status;
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Handle stock adjustments based on status changes
+    if (previousStatus !== status) {
+      if (status === "fulfilled") {
+        // Check if enough stock exists to fulfill
+        if (product.stock < item.qty) {
+          return res.status(400).json({ 
+            message: `Insufficient stock to fulfill. Available: ${product.stock}, Required: ${item.qty}` 
+          });
+        }
+        // Reduce stock when order is fulfilled (confirmed as sold)
+        product.stock -= item.qty;
+        // Safeguard: never allow negative stock
+        if (product.stock < 0) {
+          product.stock = 0;
+        }
+        await product.save();
+      } else if (status === "cancelled") {
+        // Restore stock when order is cancelled
+        if (previousStatus === "fulfilled") {
+          // If it was fulfilled, restore the quantity
+          product.stock += item.qty;
+          await product.save();
+        }
+        // If it was pending and now cancelled, no change (stock was never reduced)
+      }
+    }
 
     item.status = status;
     await order.save();

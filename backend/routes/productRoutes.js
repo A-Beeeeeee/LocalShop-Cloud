@@ -82,4 +82,24 @@ router.delete("/:id", requireAuth, requireRole("retailer"), async (req, res) => 
   }
 });
 
+// PATCH /api/products/:id/stock  (retailer updates product stock)
+router.patch("/:id/stock", requireAuth, requireRole("retailer"), async (req, res) => {
+  try {
+    const { stock } = req.body;
+    if (stock === undefined || stock < 0) {
+      return res.status(400).json({ message: "Valid stock quantity required" });
+    }
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (String(product.retailer) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Not your product" });
+    }
+    product.stock = Math.max(0, Number(stock));
+    await product.save();
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 module.exports = router;

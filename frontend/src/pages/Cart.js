@@ -98,11 +98,22 @@ export default function Cart() {
           <span>₹{cart.total}</span>
         </div>
 
-        <input
-          placeholder="Delivery address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
+        <div className="address-section">
+          <div className="address-header">
+            <span className="address-icon">📍</span>
+            <h3 className="address-title">Delivery Address</h3>
+          </div>
+          <p className="address-hint">Enter where you'd like your order delivered</p>
+          <textarea
+            className="address-input"
+            placeholder="House No., Street Address, Area, City, Postal Code"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            rows="4"
+          />
+          <div className="address-char-count">{address.length} characters</div>
+        </div>
+
         <button className="primary-btn" onClick={handlePlaceOrder} disabled={placing}>
           {placing ? "Placing order..." : "Place order"}
         </button>

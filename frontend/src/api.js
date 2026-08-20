@@ -35,6 +35,7 @@ export const api = {
   getMyProducts: () => request("/products/mine", { auth: true }),
   createProduct: (payload) => request("/products", { method: "POST", body: payload, auth: true }),
   updateProduct: (id, payload) => request(`/products/${id}`, { method: "PUT", body: payload, auth: true }),
+  updateProductStock: (id, stock) => request(`/products/${id}/stock`, { method: "PATCH", body: { stock }, auth: true }),
   deleteProduct: (id) => request(`/products/${id}`, { method: "DELETE", auth: true }),
 
   placeOrder: (payload) => request("/orders", { method: "POST", body: payload, auth: true }),

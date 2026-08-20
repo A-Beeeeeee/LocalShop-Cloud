@@ -10,7 +10,16 @@ const productSchema = new mongoose.Schema(
     imageUrl: { type: String, default: "" },
     retailer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Add virtual field for availability status
+productSchema.virtual("isOutOfStock").get(function () {
+  return this.stock <= 0;
+});
+
+productSchema.virtual("availabilityStatus").get(function () {
+  return this.stock <= 0 ? "out of stock" : `${this.stock} in stock`;
+});
 
 module.exports = mongoose.model("Product", productSchema);

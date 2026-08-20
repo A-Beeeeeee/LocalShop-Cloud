@@ -12,6 +12,7 @@ export default function Storefront() {
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
   const cart = useCart();
   const { showToast } = useToast();
 
@@ -20,16 +21,40 @@ export default function Storefront() {
     showToast(`Added "${product.name}" to cart`);
   }
 
+  // Load products on category change
   useEffect(() => {
-    loadProducts();
+    loadProducts(search, category);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
-  async function loadProducts() {
+  // Debounced search
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    // Set new timeout for search
+    const timeout = setTimeout(() => {
+      if (search.trim() || category !== "All") {
+        loadProducts(search, category);
+      } else {
+        loadProducts("", "All");
+      }
+    }, 300); // 300ms debounce delay
+
+    setSearchTimeout(timeout);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  async function loadProducts(searchTerm = "", selectedCategory = "All") {
     setLoading(true);
     setError("");
     try {
-      const data = await api.getProducts({ search, category });
+      const params = {};
+      if (searchTerm.trim()) params.search = searchTerm;
+      if (selectedCategory !== "All") params.category = selectedCategory;
+      const data = await api.getProducts(params);
       setProducts(data);
     } catch (err) {
       setError(err.message);
@@ -38,21 +63,34 @@ export default function Storefront() {
     }
   }
 
-  function handleSearchSubmit(e) {
-    e.preventDefault();
-    loadProducts();
+  function handleClearSearch() {
+    setSearch("");
+    loadProducts("", category);
   }
 
   return (
     <div className="page">
-      <form className="search-bar" onSubmit={handleSearchSubmit}>
-        <input
-          placeholder="Search products or shops"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button type="submit" className="small-btn">Search</button>
-      </form>
+      <div className="search-bar-wrapper">
+        <div className="search-bar">
+          <span className="search-icon">🔍</span>
+          <input
+            placeholder="Search products or shops..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+          {search && (
+            <button 
+              type="button" 
+              className="search-clear-btn" 
+              onClick={handleClearSearch}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="chip-row">
         {CATEGORIES.map((c) => (

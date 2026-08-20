@@ -5,8 +5,11 @@ export default function RetailerDashboard() {
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [editingStock, setEditingStock] = useState(null);
+  const [stockValue, setStockValue] = useState("");
   const [form, setForm] = useState({ name: "", price: "", category: "General", stock: "", description: "" });
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -59,6 +62,31 @@ export default function RetailerDashboard() {
       loadAll();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleUpdateStock(productId, newStock) {
+    // Validate before saving
+    if (newStock === "" || newStock === undefined) {
+      setError("Please enter a valid stock quantity");
+      return;
+    }
+    const stockNum = Number(newStock);
+    if (isNaN(stockNum) || stockNum < 0) {
+      setError("Stock must be a valid number >= 0");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await api.updateProductStock(productId, stockNum);
+      setEditingStock(null);
+      setStockValue("");
+      loadAll();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -137,7 +165,54 @@ export default function RetailerDashboard() {
             <div key={p._id} className="list-row">
               <div>
                 <p>{p.name}</p>
-                <p className="muted">₹{p.price} · stock {p.stock}</p>
+                {editingStock === p._id ? (
+                  <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem" }}>
+                    <input
+                      type="number"
+                      min="0"
+                      value={stockValue}
+                      onChange={(e) => setStockValue(e.target.value)}
+                      placeholder="New stock"
+                      style={{ width: "80px", padding: "0.25rem" }}
+                      disabled={saving}
+                    />
+                    <button 
+                      type="button"
+                      className="small-btn" 
+                      onClick={() => handleUpdateStock(p._id, stockValue)}
+                      style={{ padding: "0.25rem 0.75rem" }}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                    <button 
+                      type="button"
+                      className="link-btn" 
+                      onClick={() => {
+                        setEditingStock(null);
+                        setError("");
+                      }}
+                      style={{ padding: "0.25rem" }}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <p className="muted">
+                    ₹{p.price} · stock {p.stock}
+                    <button 
+                      className="link-btn" 
+                      onClick={() => {
+                        setEditingStock(p._id);
+                        setStockValue(p.stock);
+                      }}
+                      style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}
+                    >
+                      edit stock
+                    </button>
+                  </p>
+                )}
               </div>
               <button className="link-btn" onClick={() => handleDeleteProduct(p._id)}>
                 Delete
