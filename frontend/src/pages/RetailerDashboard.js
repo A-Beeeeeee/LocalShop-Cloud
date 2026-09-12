@@ -1,21 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
+import { useToast } from "../context/ToastContext";
+import StatusBadge from "../components/StatusBadge";
+import Modal from "../components/Modal";
+import { 
+  TrendingUpIcon, 
+  PackageIcon, 
+  BagIcon, 
+  AlertTriangleIcon, 
+  PlusIcon, 
+  TrashIcon, 
+  EditIcon, 
+  RefreshCwIcon, 
+  CheckIcon, 
+  XIcon, 
+  SearchIcon, 
+  PrinterIcon 
+} from "../components/Icons";
+
+const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
 
 export default function RetailerDashboard() {
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "products" | "orders" | "reports"
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [editingStock, setEditingStock] = useState(null);
-  const [stockValue, setStockValue] = useState("");
-  const [form, setForm] = useState({ name: "", price: "", category: "General", stock: "", description: "" });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
+
+  // Stock inline edit state
+  const [editingStockId, setEditingStockId] = useState(null);
+  const [stockValue, setStockValue] = useState("");
+  const [savingStock, setSavingStock] = useState(false);
+
+  // Add Product Modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    category: "General",
+    stock: "",
+    description: "",
+    imageUrl: "",
+  });
+  const [submittingProduct, setSubmittingProduct] = useState(false);
+
+  // Search & Filters in Products and Orders tabs
+  const [productSearch, setProductSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
   useEffect(() => {
     loadAll();
   }, []);
 
   async function loadAll() {
+    setLoading(true);
+    setError("");
     try {
       const [statsData, productsData, ordersData] = await Promise.all([
         api.getRetailerDashboard(),
@@ -23,233 +64,747 @@ export default function RetailerDashboard() {
         api.getRetailerOrders(),
       ]);
       setStats(statsData);
-      setProducts(productsData);
-      setOrders(ordersData);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
     }
   }
 
-  function update(field, value) {
-    setForm((f) => ({ ...f, [field]: value }));
+  function updateForm(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleAddProduct(e) {
     e.preventDefault();
-    setError("");
-    if (!form.name || !form.price) {
-      setError("Product name and price are required");
+    if (!form.name.trim() || form.price === "") {
+      showToast("Product name and price are required", "error");
       return;
     }
+    const priceNum = Number(form.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      showToast("Please enter a valid price", "error");
+      return;
+    }
+
+    setSubmittingProduct(true);
     try {
       await api.createProduct({
-        name: form.name,
-        price: Number(form.price),
+        name: form.name.trim(),
+        price: priceNum,
         category: form.category,
         stock: Number(form.stock) || 0,
-        description: form.description,
+        description: form.description.trim(),
+        imageUrl: form.imageUrl.trim() || undefined,
       });
-      setForm({ name: "", price: "", category: "General", stock: "", description: "" });
+      showToast(`Product "${form.name}" created successfully`, "success");
+      setForm({ name: "", price: "", category: "General", stock: "", description: "", imageUrl: "" });
+      setIsAddModalOpen(false);
       loadAll();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to create product", "error");
+    } finally {
+      setSubmittingProduct(false);
     }
   }
 
-  async function handleDeleteProduct(id) {
+  async function handleDeleteProduct(id, name) {
+    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
       await api.deleteProduct(id);
+      showToast(`Deleted "${name}"`, "success");
       loadAll();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to delete product", "error");
     }
   }
 
-  async function handleUpdateStock(productId, newStock) {
-    // Validate before saving
-    if (newStock === "" || newStock === undefined) {
-      setError("Please enter a valid stock quantity");
+  async function handleUpdateStock(productId) {
+    if (stockValue === "" || stockValue === undefined) {
+      showToast("Please enter a valid stock value", "error");
       return;
     }
-    const stockNum = Number(newStock);
+    const stockNum = Number(stockValue);
     if (isNaN(stockNum) || stockNum < 0) {
-      setError("Stock must be a valid number >= 0");
+      showToast("Stock must be a non-negative number", "error");
       return;
     }
-    setSaving(true);
-    setError("");
+
+    setSavingStock(true);
     try {
       await api.updateProductStock(productId, stockNum);
-      setEditingStock(null);
+      showToast("Stock updated", "success");
+      setEditingStockId(null);
       setStockValue("");
       loadAll();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to update stock", "error");
     } finally {
-      setSaving(false);
+      setSavingStock(false);
     }
   }
 
   async function handleStatusChange(orderId, productId, status) {
     try {
       await api.updateItemStatus(orderId, { productId, status });
+      showToast(`Order item marked as ${status}`, "success");
       loadAll();
     } catch (err) {
-      setError(err.message);
+      showToast(err.message || "Failed to update item status", "error");
     }
   }
 
+  // Filtered products list
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.category && p.category.toLowerCase().includes(productSearch.toLowerCase()))
+  );
+
+  // Flattened order items list for fulfillment
+  const flattenedOrderItems = [];
+  orders.forEach((order) => {
+    order.items?.forEach((item) => {
+      if (orderStatusFilter === "all" || item.status === orderStatusFilter) {
+        flattenedOrderItems.push({
+          orderId: order._id,
+          createdAt: order.createdAt,
+          customerName: order.customer?.name || "Customer",
+          customerEmail: order.customer?.email || "",
+          address: order.address || "",
+          item,
+        });
+      }
+    });
+  });
+
   return (
     <div className="page">
-      <p className="form-title">Retailer dashboard</p>
-      {error && <p className="error-text">{error}</p>}
+      {/* Page Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Retailer Dashboard</h1>
+          <p className="page-subtitle">Manage store inventory, orders, and sales performance</p>
+        </div>
+        <div className="flex-center gap-2">
+          <button 
+            type="button" 
+            className="btn btn-secondary btn-sm" 
+            onClick={loadAll} 
+            disabled={loading}
+          >
+            <RefreshCwIcon size={14} className={loading ? "spin" : ""} />
+            Refresh
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-primary btn-sm" 
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <PlusIcon size={14} />
+            Add Product
+          </button>
+        </div>
+      </div>
 
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <p className="stat-label">Sales</p>
-            <p className="stat-value">₹{stats.salesTotal}</p>
+      {error && (
+        <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="tab-bar" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "overview"}
+          className={`tab-btn ${activeTab === "overview" ? "tab-btn-active" : ""}`}
+          onClick={() => setActiveTab("overview")}
+        >
+          <TrendingUpIcon size={15} />
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "products"}
+          className={`tab-btn ${activeTab === "products" ? "tab-btn-active" : ""}`}
+          onClick={() => setActiveTab("products")}
+        >
+          <PackageIcon size={15} />
+          Products ({products.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "orders"}
+          className={`tab-btn ${activeTab === "orders" ? "tab-btn-active" : ""}`}
+          onClick={() => setActiveTab("orders")}
+        >
+          <BagIcon size={15} />
+          Orders ({orders.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "reports"}
+          className={`tab-btn ${activeTab === "reports" ? "tab-btn-active" : ""}`}
+          onClick={() => setActiveTab("reports")}
+        >
+          <PrinterIcon size={15} />
+          Reports
+        </button>
+      </div>
+
+      {/* TAB 1: OVERVIEW */}
+      {activeTab === "overview" && (
+        <div className="tab-content">
+          {/* KPI Metrics */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-label">Total Revenue</span>
+                <span className="stat-icon-wrap stat-icon-primary">₹</span>
+              </div>
+              <p className="stat-value">₹{stats?.salesTotal ?? 0}</p>
+              <p className="stat-meta">From fulfilled orders</p>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-label">Orders Received</span>
+                <span className="stat-icon-wrap stat-icon-info">
+                  <BagIcon size={16} />
+                </span>
+              </div>
+              <p className="stat-value">{stats?.orderCount ?? 0}</p>
+              <p className="stat-meta">Total customer order items</p>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-label">Active Products</span>
+                <span className="stat-icon-wrap stat-icon-success">
+                  <PackageIcon size={16} />
+                </span>
+              </div>
+              <p className="stat-value">{stats?.productCount ?? 0}</p>
+              <p className="stat-meta">In your store catalog</p>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-label">Low Stock Alerts</span>
+                <span className="stat-icon-wrap stat-icon-warning">
+                  <AlertTriangleIcon size={16} />
+                </span>
+              </div>
+              <p className={`stat-value ${stats?.lowStockCount > 0 ? "text-danger" : ""}`}>
+                {stats?.lowStockCount ?? 0}
+              </p>
+              <p className="stat-meta">&lt; 5 units remaining</p>
+            </div>
           </div>
-          <div className="stat-card">
-            <p className="stat-label">Orders</p>
-            <p className="stat-value">{stats.orderCount}</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Products</p>
-            <p className="stat-value">{stats.productCount}</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Low stock</p>
-            <p className="stat-value danger">{stats.lowStockCount}</p>
+
+          {/* Recent Orders Preview */}
+          <div className="card" style={{ marginTop: "20px" }}>
+            <div className="card-header flex-between">
+              <div>
+                <h3 className="card-title">Recent Order Items</h3>
+                <p className="card-subtitle">Latest orders containing your products</p>
+              </div>
+              <button 
+                type="button" 
+                className="btn btn-ghost btn-sm"
+                onClick={() => setActiveTab("orders")}
+              >
+                View all orders
+              </button>
+            </div>
+
+            {flattenedOrderItems.length === 0 ? (
+              <p className="text-muted text-sm" style={{ padding: "16px 0" }}>
+                No customer orders received yet.
+              </p>
+            ) : (
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Customer</th>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flattenedOrderItems.slice(0, 5).map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="font-mono text-xs font-semibold">
+                          #{row.orderId.slice(-6).toUpperCase()}
+                        </td>
+                        <td>{row.customerName}</td>
+                        <td className="font-medium">{row.item.name}</td>
+                        <td>{row.item.qty}</td>
+                        <td className="font-semibold">₹{row.item.price * row.item.qty}</td>
+                        <td>
+                          <StatusBadge status={row.item.status || "pending"} size="sm" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      <div className="two-col">
-        <div className="card">
-          <p className="form-title">Add product</p>
-          <form onSubmit={handleAddProduct}>
-            <input placeholder="Name" value={form.name} onChange={(e) => update("name", e.target.value)} />
-            <input
-              placeholder="Price"
-              type="number"
-              value={form.price}
-              onChange={(e) => update("price", e.target.value)}
-            />
-            <select value={form.category} onChange={(e) => update("category", e.target.value)}>
-              <option>General</option>
-              <option>Groceries</option>
-              <option>Apparel</option>
-              <option>Home</option>
-              <option>Electronics</option>
-            </select>
-            <input
-              placeholder="Stock quantity"
-              type="number"
-              value={form.stock}
-              onChange={(e) => update("stock", e.target.value)}
-            />
-            <input
-              placeholder="Description"
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-            />
-            <button type="submit" className="primary-btn">Add product</button>
-          </form>
-        </div>
-
-        <div className="card">
-          <p className="form-title">My products</p>
-          {products.length === 0 && <p>No products yet.</p>}
-          {products.map((p) => (
-            <div key={p._id} className="list-row">
-              <div>
-                <p>{p.name}</p>
-                {editingStock === p._id ? (
-                  <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem" }}>
-                    <input
-                      type="number"
-                      min="0"
-                      value={stockValue}
-                      onChange={(e) => setStockValue(e.target.value)}
-                      placeholder="New stock"
-                      style={{ width: "80px", padding: "0.25rem" }}
-                      disabled={saving}
-                    />
-                    <button 
-                      type="button"
-                      className="small-btn" 
-                      onClick={() => handleUpdateStock(p._id, stockValue)}
-                      style={{ padding: "0.25rem 0.75rem" }}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save"}
-                    </button>
-                    <button 
-                      type="button"
-                      className="link-btn" 
-                      onClick={() => {
-                        setEditingStock(null);
-                        setError("");
-                      }}
-                      style={{ padding: "0.25rem" }}
-                      disabled={saving}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <p className="muted">
-                    ₹{p.price} · stock {p.stock}
-                    <button 
-                      className="link-btn" 
-                      onClick={() => {
-                        setEditingStock(p._id);
-                        setStockValue(p.stock);
-                      }}
-                      style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}
-                    >
-                      edit stock
-                    </button>
-                  </p>
-                )}
+      {/* TAB 2: PRODUCTS (INVENTORY) */}
+      {activeTab === "products" && (
+        <div className="tab-content">
+          <div className="card">
+            <div className="card-header flex-between flex-wrap gap-2">
+              <div className="search-bar" style={{ maxWidth: "320px", margin: 0 }}>
+                <span className="search-icon">
+                  <SearchIcon size={15} />
+                </span>
+                <input
+                  placeholder="Filter products..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="search-input"
+                  style={{ padding: "8px 0", fontSize: "14px" }}
+                />
               </div>
-              <button className="link-btn" onClick={() => handleDeleteProduct(p._id)}>
-                Delete
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <PlusIcon size={14} />
+                Add Product
               </button>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="card">
-        <p className="form-title">Orders for my products</p>
-        {orders.length === 0 && <p>No orders yet.</p>}
-        {orders.map((order) =>
-          order.items
-            .filter((item) => true)
-            .map((item) => (
-              <div key={`${order._id}-${item.product}`} className="list-row">
-                <div>
-                  <p>
-                    #{order._id.slice(-5)} — {order.customer?.name || "Customer"}
-                  </p>
-                  <p className="muted">
-                    {item.name} × {item.qty} — ₹{item.price * item.qty}
-                  </p>
-                </div>
+            {filteredProducts.length === 0 ? (
+              <div className="empty-state" style={{ padding: "40px 16px" }}>
+                <PackageIcon size={30} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+                  {productSearch ? "No matching products found" : "No products added yet"}
+                </h3>
+                <p className="empty-sub text-xs">
+                  {productSearch
+                    ? "Try adjusting your search query."
+                    : "Create your first product listing to start selling."}
+                </p>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>Category</th>
+                      <th style={{ textAlign: "right" }}>Price</th>
+                      <th>Stock Level</th>
+                      <th style={{ textAlign: "right" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((p) => {
+                      const isOutOfStock = p.stock <= 0;
+                      const isLowStock = p.stock > 0 && p.stock < 5;
+                      const isEditing = editingStockId === p._id;
+
+                      return (
+                        <tr key={p._id}>
+                          <td>
+                            <div className="font-semibold text-sm">{p.name}</div>
+                            {p.description && (
+                              <div className="text-muted text-xs truncate" style={{ maxWidth: "260px" }}>
+                                {p.description}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <span className="product-category-tag">{p.category || "General"}</span>
+                          </td>
+                          <td style={{ textAlign: "right", fontWeight: 600 }}>₹{p.price}</td>
+                          <td>
+                            {isEditing ? (
+                              <div className="flex-center gap-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={stockValue}
+                                  onChange={(e) => setStockValue(e.target.value)}
+                                  className="form-input form-input-sm"
+                                  style={{ width: "70px", padding: "4px 6px" }}
+                                  disabled={savingStock}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  style={{ padding: "4px 8px" }}
+                                  onClick={() => handleUpdateStock(p._id)}
+                                  disabled={savingStock}
+                                  title="Save stock"
+                                >
+                                  <CheckIcon size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ padding: "4px 8px" }}
+                                  onClick={() => {
+                                    setEditingStockId(null);
+                                    setStockValue("");
+                                  }}
+                                  disabled={savingStock}
+                                  title="Cancel"
+                                >
+                                  <XIcon size={13} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex-center gap-2">
+                                <StatusBadge
+                                  status={isOutOfStock ? "out-of-stock" : isLowStock ? "low-stock" : "in-stock"}
+                                  label={`${p.stock} units`}
+                                  size="sm"
+                                />
+                                <button
+                                  type="button"
+                                  className="btn-icon text-muted"
+                                  onClick={() => {
+                                    setEditingStockId(p._id);
+                                    setStockValue(p.stock);
+                                  }}
+                                  title="Edit stock quantity"
+                                >
+                                  <EditIcon size={13} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm text-danger"
+                              onClick={() => handleDeleteProduct(p._id, p.name)}
+                              title="Delete product"
+                            >
+                              <TrashIcon size={13} />
+                              <span>Delete</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: ORDERS (FULFILLMENT) */}
+      {activeTab === "orders" && (
+        <div className="tab-content">
+          <div className="card">
+            <div className="card-header flex-between flex-wrap gap-2">
+              <div>
+                <h3 className="card-title">Order Fulfillment</h3>
+                <p className="card-subtitle">Manage fulfillment status for each purchased item</p>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex-center gap-2">
+                <span className="text-muted text-xs">Status:</span>
                 <select
-                  value={item.status}
-                  onChange={(e) => handleStatusChange(order._id, item.product, e.target.value)}
+                  value={orderStatusFilter}
+                  onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  className="form-select form-select-sm"
+                  style={{ width: "auto" }}
                 >
+                  <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
                   <option value="fulfilled">Fulfilled</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
-            ))
-        )}
-      </div>
+            </div>
+
+            {flattenedOrderItems.length === 0 ? (
+              <div className="empty-state" style={{ padding: "40px 16px" }}>
+                <BagIcon size={30} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+                  No orders found
+                </h3>
+                <p className="empty-sub text-xs">
+                  {orderStatusFilter !== "all"
+                    ? `No orders currently match status "${orderStatusFilter}".`
+                    : "When customers order your products, they will appear here for fulfillment."}
+                </p>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Customer & Delivery</th>
+                      <th>Product</th>
+                      <th style={{ textAlign: "center" }}>Qty</th>
+                      <th style={{ textAlign: "right" }}>Total</th>
+                      <th style={{ width: "160px" }}>Fulfillment Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flattenedOrderItems.map((row, idx) => (
+                      <tr key={`${row.orderId}-${row.item.product}-${idx}`}>
+                        <td>
+                          <div className="font-mono text-xs font-bold">
+                            #{row.orderId.slice(-6).toUpperCase()}
+                          </div>
+                          <div className="text-muted text-xs">
+                            {new Date(row.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="font-semibold text-sm">{row.customerName}</div>
+                          {row.customerEmail && (
+                            <div className="text-muted text-xs">{row.customerEmail}</div>
+                          )}
+                          {row.address && (
+                            <div className="text-muted text-xs truncate" style={{ maxWidth: "220px" }} title={row.address}>
+                              {row.address}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div className="font-medium text-sm">{row.item.name}</div>
+                          <div className="text-muted text-xs">₹{row.item.price} each</div>
+                        </td>
+                        <td style={{ textAlign: "center", fontWeight: 600 }}>{row.item.qty}</td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-primary)" }}>
+                          ₹{row.item.price * row.item.qty}
+                        </td>
+                        <td>
+                          <select
+                            value={row.item.status || "pending"}
+                            onChange={(e) =>
+                              handleStatusChange(row.orderId, row.item.product, e.target.value)
+                            }
+                            className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="fulfilled">Fulfilled</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: REPORTS */}
+      {activeTab === "reports" && (
+        <div className="tab-content">
+          <div className="card">
+            <div className="card-header flex-between flex-wrap gap-2">
+              <div>
+                <h3 className="card-title">Retailer Performance Summary</h3>
+                <p className="card-subtitle">Verified platform metrics and catalog overview</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => window.print()}
+              >
+                <PrinterIcon size={14} />
+                Print Summary Report
+              </button>
+            </div>
+
+            <div className="report-summary-grid">
+              <div className="report-metric-box">
+                <span className="text-muted text-xs uppercase font-semibold">Total Revenue</span>
+                <span className="report-metric-val">₹{stats?.salesTotal ?? 0}</span>
+                <span className="text-muted text-xs">Accumulated revenue from sales</span>
+              </div>
+              <div className="report-metric-box">
+                <span className="text-muted text-xs uppercase font-semibold">Total Orders Processed</span>
+                <span className="report-metric-val">{stats?.orderCount ?? 0}</span>
+                <span className="text-muted text-xs">Customer line items ordered</span>
+              </div>
+              <div className="report-metric-box">
+                <span className="text-muted text-xs uppercase font-semibold">Listed Products</span>
+                <span className="report-metric-val">{stats?.productCount ?? 0}</span>
+                <span className="text-muted text-xs">Total unique SKU catalog entries</span>
+              </div>
+              <div className="report-metric-box">
+                <span className="text-muted text-xs uppercase font-semibold">Low Stock Products</span>
+                <span className="report-metric-val text-danger">{stats?.lowStockCount ?? 0}</span>
+                <span className="text-muted text-xs">Items with stock &lt; 5 units</span>
+              </div>
+            </div>
+
+            {/* Category breakdown from actual products */}
+            <div style={{ marginTop: "24px" }}>
+              <h4 className="font-semibold text-sm" style={{ marginBottom: "12px" }}>
+                Catalog Distribution by Category
+              </h4>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th style={{ textAlign: "center" }}>Product Count</th>
+                      <th style={{ textAlign: "right" }}>Available Inventory</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CATEGORIES.map((cat) => {
+                      const catProducts = products.filter((p) => p.category === cat);
+                      const totalStock = catProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
+                      return (
+                        <tr key={cat}>
+                          <td className="font-medium">{cat}</td>
+                          <td style={{ textAlign: "center" }}>{catProducts.length}</td>
+                          <td style={{ textAlign: "right" }}>{totalStock} units</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Product Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Product to Store"
+        maxWidth="500px"
+      >
+        <form onSubmit={handleAddProduct}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="prod-name">Product Name *</label>
+            <input
+              id="prod-name"
+              type="text"
+              required
+              className="form-input"
+              placeholder="e.g. Organic Brown Rice 1kg"
+              value={form.name}
+              onChange={(e) => updateForm("name", e.target.value)}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="prod-price">Price (₹) *</label>
+              <input
+                id="prod-price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                className="form-input"
+                placeholder="e.g. 150"
+                value={form.price}
+                onChange={(e) => updateForm("price", e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="prod-category">Category</label>
+              <select
+                id="prod-category"
+                className="form-select"
+                value={form.category}
+                onChange={(e) => updateForm("category", e.target.value)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="prod-stock">Initial Stock Quantity</label>
+              <input
+                id="prod-stock"
+                type="number"
+                min="0"
+                className="form-input"
+                placeholder="e.g. 25"
+                value={form.stock}
+                onChange={(e) => updateForm("stock", e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="prod-image">Image URL (Optional)</label>
+              <input
+                id="prod-image"
+                type="url"
+                className="form-input"
+                placeholder="https://example.com/item.jpg"
+                value={form.imageUrl}
+                onChange={(e) => updateForm("imageUrl", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="prod-desc">Description (Optional)</label>
+            <textarea
+              id="prod-desc"
+              className="form-input form-textarea"
+              rows={2}
+              placeholder="Brief summary of the product..."
+              value={form.description}
+              onChange={(e) => updateForm("description", e.target.value)}
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setIsAddModalOpen(false)}
+              disabled={submittingProduct}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submittingProduct}
+            >
+              {submittingProduct ? "Creating..." : "Save Product"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

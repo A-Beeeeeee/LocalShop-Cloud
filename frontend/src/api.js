@@ -47,6 +47,7 @@ export const api = {
   getRetailerDashboard: () => request("/dashboard/retailer", { auth: true }),
 
   getPendingRetailers: () => request("/admin/retailers?status=pending", { auth: true }),
+  getRetailers: (status = "all") => request(`/admin/retailers?status=${status}`, { auth: true }),
   approveRetailer: (id) => request(`/admin/retailers/${id}/approve`, { method: "PUT", auth: true }),
   rejectRetailer: (id) => request(`/admin/retailers/${id}`, { method: "DELETE", auth: true }),
   getAdminStats: () => request("/admin/stats", { auth: true }),

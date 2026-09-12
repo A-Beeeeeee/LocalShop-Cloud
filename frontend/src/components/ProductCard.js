@@ -1,28 +1,80 @@
 import React from "react";
+import { CartIcon, PackageIcon, StoreIcon } from "./Icons";
+import StatusBadge from "./StatusBadge";
 
 export default function ProductCard({ product, onAdd }) {
   const isOutOfStock = product.stock <= 0;
+  const isLowStock = product.stock > 0 && product.stock <= 5;
+  const shopName = product.retailer?.shopName || product.retailer?.name || "Local Retailer";
 
   return (
-    <div className="card product-card">
-      <div className="product-image-placeholder">IMG</div>
-      <p className="product-name">{product.name}</p>
-      <p className="product-shop">{product.retailer?.shopName || product.retailer?.name || ""}</p>
-      <p className="product-stock" style={{ color: isOutOfStock ? "#d32f2f" : "#4caf50", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-        {isOutOfStock ? "Out of Stock" : `${product.stock} in stock`}
-      </p>
-      <div className="product-footer">
-        <span className="product-price">₹{product.price}</span>
-        {onAdd && (
-          <button 
-            className="small-btn" 
-            onClick={() => onAdd(product)}
-            disabled={isOutOfStock}
-            style={{ opacity: isOutOfStock ? 0.5 : 1, cursor: isOutOfStock ? "not-allowed" : "pointer" }}
-          >
-            {isOutOfStock ? "Out of Stock" : "Add"}
-          </button>
+    <div className="product-card">
+      <div className="product-image-container">
+        {product.imageUrl ? (
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            className="product-img"
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div 
+          className="product-image-fallback" 
+          style={{ display: product.imageUrl ? "none" : "flex" }}
+        >
+          <PackageIcon size={32} color="#94a3b8" />
+        </div>
+        
+        <div className="product-card-top-badges">
+          {product.category && (
+            <span className="product-category-tag">{product.category}</span>
+          )}
+          {isOutOfStock ? (
+            <StatusBadge status="out-of-stock" label="Out of stock" size="sm" />
+          ) : isLowStock ? (
+            <StatusBadge status="low-stock" label={`Only ${product.stock} left`} size="sm" />
+          ) : (
+            <StatusBadge status="in-stock" label={`${product.stock} available`} size="sm" />
+          )}
+        </div>
+      </div>
+
+      <div className="product-content">
+        <div className="product-shop-meta">
+          <StoreIcon size={13} color="#64748b" />
+          <span className="product-shop-name" title={shopName}>{shopName}</span>
+        </div>
+
+        <h3 className="product-title" title={product.name}>{product.name}</h3>
+
+        {product.description && (
+          <p className="product-desc" title={product.description}>
+            {product.description}
+          </p>
         )}
+
+        <div className="product-footer">
+          <div className="product-price-block">
+            <span className="product-currency">₹</span>
+            <span className="product-price-val">{product.price}</span>
+          </div>
+
+          {onAdd && (
+            <button
+              type="button"
+              className={`btn btn-sm ${isOutOfStock ? "btn-disabled" : "btn-primary"}`}
+              onClick={() => onAdd(product)}
+              disabled={isOutOfStock}
+              title={isOutOfStock ? "Item is out of stock" : "Add to cart"}
+            >
+              <CartIcon size={14} />
+              <span>{isOutOfStock ? "Out of Stock" : "Add"}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

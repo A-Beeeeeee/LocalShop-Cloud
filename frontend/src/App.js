@@ -9,28 +9,37 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Storefront from "./pages/Storefront";
 import Cart from "./pages/Cart";
+import CustomerOrders from "./pages/CustomerOrders";
 import RetailerDashboard from "./pages/RetailerDashboard";
 import AdminPanel from "./pages/AdminPanel";
 
 export default function App() {
   return (
     <ToastProvider>
-    <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Storefront />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/cart"
-              element={
-                <PrivateRoute role="customer">
-                  <Cart />
-                </PrivateRoute>
-              }
-            />
+      <AuthProvider>
+        <CartProvider>
+          <BrowserRouter>
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<Storefront />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/cart"
+                element={
+                  <PrivateRoute role="customer">
+                    <Cart />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <PrivateRoute role="customer">
+                    <CustomerOrders />
+                  </PrivateRoute>
+                }
+              />
             <Route
               path="/retailer"
               element={
