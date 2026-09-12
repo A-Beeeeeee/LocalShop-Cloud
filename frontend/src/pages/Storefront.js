@@ -69,14 +69,14 @@ export default function Storefront() {
 
   return (
     <div className="page">
-      {/* Search and Filter Toolbar */}
+      {/* Compact Unified Search & Filter Toolbar */}
       <div className="storefront-toolbar">
         <div className="search-bar">
           <span className="search-icon">
-            <SearchIcon size={16} />
+            <SearchIcon size={14} />
           </span>
           <input
-            placeholder="Search products or local retailers..."
+            placeholder="Search products or shops..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="search-input"
@@ -90,78 +90,81 @@ export default function Storefront() {
               title="Clear search"
               aria-label="Clear search"
             >
-              <XIcon size={14} />
+              <XIcon size={12} />
             </button>
           )}
         </div>
 
-        <div className="chip-row" role="tablist">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              role="tab"
-              aria-selected={category === c}
-              className={`chip ${category === c ? "chip-active" : ""}`}
-              onClick={() => setCategory(c)}
+        <div className="flex-center gap-2 flex-wrap" style={{ flex: 1, justifyContent: "space-between" }}>
+          <div className="chip-row" role="tablist">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="tab"
+                aria-selected={category === c}
+                className={`chip ${category === c ? "chip-active" : ""}`}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-center gap-2">
+            <span className="results-count text-xs">
+              {loading ? "Searching..." : `${products.length} item${products.length === 1 ? "" : "s"}`}
+            </span>
+            <button 
+              type="button" 
+              className="btn btn-ghost btn-sm" 
+              onClick={() => loadProducts(search, category)}
+              disabled={loading}
+              title="Reload catalog"
+              style={{ padding: "3px 6px" }}
             >
-              {c}
+              <RefreshCwIcon size={12} className={loading ? "spin" : ""} />
             </button>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Results Header Bar */}
-      <div className="results-header">
-        <span className="results-count">
-          {loading ? "Searching..." : `${products.length} product${products.length === 1 ? "" : "s"} found`}
-        </span>
-        <button 
-          type="button" 
-          className="btn btn-ghost btn-sm" 
-          onClick={() => loadProducts(search, category)}
-          disabled={loading}
-          title="Reload products"
-        >
-          <RefreshCwIcon size={13} className={loading ? "spin" : ""} />
-          <span>Refresh</span>
-        </button>
-      </div>
-
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
+        <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
           <p>{error}</p>
         </div>
       )}
 
       {loading ? (
         <div className="product-grid">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div className="product-card skeleton-card" key={i}>
-              <div className="skeleton" style={{ height: "130px", marginBottom: "10px" }} />
-              <div className="skeleton" style={{ height: "14px", width: "40%", marginBottom: "8px" }} />
-              <div className="skeleton" style={{ height: "18px", width: "80%", marginBottom: "12px" }} />
-              <div className="skeleton" style={{ height: "24px", width: "100%" }} />
+              <div className="skeleton" style={{ height: "90px" }} />
+              <div style={{ padding: "8px 10px" }}>
+                <div className="skeleton" style={{ height: "12px", width: "40%", marginBottom: "6px" }} />
+                <div className="skeleton" style={{ height: "14px", width: "80%", marginBottom: "8px" }} />
+                <div className="skeleton" style={{ height: "20px", width: "100%" }} />
+              </div>
             </div>
           ))}
         </div>
       ) : products.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon-wrap">
-            <BagIcon size={32} />
+            <BagIcon size={26} />
           </div>
           <h2 className="empty-title">No products found</h2>
           <p className="empty-sub">
             {search || category !== "All"
-              ? "No products matched your search or filter. Try adjusting your keywords or category."
-              : "No products are currently available in the cloud catalog. Retailers will add inventory soon."}
+              ? "No products matched your criteria. Try different keywords or select another category."
+              : "No products available in the cloud catalog yet."}
           </p>
           {(search || category !== "All") && (
             <button 
               type="button" 
               className="btn btn-secondary btn-sm" 
               onClick={() => { setSearch(""); setCategory("All"); }}
-              style={{ marginTop: "14px" }}
+              style={{ marginTop: "10px" }}
             >
               Reset Filters
             </button>

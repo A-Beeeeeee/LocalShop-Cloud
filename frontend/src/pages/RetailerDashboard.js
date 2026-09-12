@@ -146,42 +146,49 @@ export default function RetailerDashboard() {
     }
   }
 
-  async function handleStatusChange(orderId, productId, status) {
+  async function handleStatusChange(orderId, productId, newStatus) {
     try {
-      await api.updateItemStatus(orderId, { productId, status });
-      showToast(`Order item marked as ${status}`, "success");
+      await api.updateOrderItemStatus(orderId, productId, newStatus);
+      showToast(`Status updated to ${newStatus}`, "success");
       loadAll();
     } catch (err) {
       showToast(err.message || "Failed to update item status", "error");
     }
   }
 
-  // Filtered products list
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.category && p.category.toLowerCase().includes(productSearch.toLowerCase()))
-  );
+  // Filter products by search
+  const filteredProducts = products.filter((p) => {
+    if (!productSearch.trim()) return true;
+    const q = productSearch.toLowerCase();
+    return (
+      p.name?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q)
+    );
+  });
 
-  // Flattened order items list for fulfillment
+  // Flatten and filter order items
   const flattenedOrderItems = [];
   orders.forEach((order) => {
-    order.items?.forEach((item) => {
-      if (orderStatusFilter === "all" || item.status === orderStatusFilter) {
-        flattenedOrderItems.push({
-          orderId: order._id,
-          createdAt: order.createdAt,
-          customerName: order.customer?.name || "Customer",
-          customerEmail: order.customer?.email || "",
-          address: order.address || "",
-          item,
-        });
-      }
-    });
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach((item) => {
+        if (orderStatusFilter === "all" || (item.status || "pending") === orderStatusFilter) {
+          flattenedOrderItems.push({
+            orderId: order._id,
+            createdAt: order.createdAt,
+            customerName: order.customer?.name || "Customer",
+            customerEmail: order.customer?.email || "",
+            address: order.address,
+            item,
+          });
+        }
+      });
+    }
   });
 
   return (
     <div className="page">
-      {/* Page Header */}
+      {/* Top Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Retailer Dashboard</h1>
@@ -194,7 +201,7 @@ export default function RetailerDashboard() {
             onClick={loadAll} 
             disabled={loading}
           >
-            <RefreshCwIcon size={14} className={loading ? "spin" : ""} />
+            <RefreshCwIcon size={13} className={loading ? "spin" : ""} />
             Refresh
           </button>
           <button 
@@ -202,14 +209,14 @@ export default function RetailerDashboard() {
             className="btn btn-primary btn-sm" 
             onClick={() => setIsAddModalOpen(true)}
           >
-            <PlusIcon size={14} />
+            <PlusIcon size={13} />
             Add Product
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
+        <div className="alert alert-danger" style={{ marginBottom: "8px" }}>
           <p>{error}</p>
         </div>
       )}
@@ -223,7 +230,7 @@ export default function RetailerDashboard() {
           className={`tab-btn ${activeTab === "overview" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("overview")}
         >
-          <TrendingUpIcon size={15} />
+          <TrendingUpIcon size={14} />
           Overview
         </button>
         <button
@@ -233,7 +240,7 @@ export default function RetailerDashboard() {
           className={`tab-btn ${activeTab === "products" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("products")}
         >
-          <PackageIcon size={15} />
+          <PackageIcon size={14} />
           Products ({products.length})
         </button>
         <button
@@ -243,7 +250,7 @@ export default function RetailerDashboard() {
           className={`tab-btn ${activeTab === "orders" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("orders")}
         >
-          <BagIcon size={15} />
+          <BagIcon size={14} />
           Orders ({orders.length})
         </button>
         <button
@@ -253,7 +260,7 @@ export default function RetailerDashboard() {
           className={`tab-btn ${activeTab === "reports" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("reports")}
         >
-          <PrinterIcon size={15} />
+          <PrinterIcon size={14} />
           Reports
         </button>
       </div>
@@ -276,18 +283,18 @@ export default function RetailerDashboard() {
               <div className="stat-card-header">
                 <span className="stat-label">Orders Received</span>
                 <span className="stat-icon-wrap stat-icon-info">
-                  <BagIcon size={16} />
+                  <BagIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.orderCount ?? 0}</p>
-              <p className="stat-meta">Total customer order items</p>
+              <p className="stat-meta">Total order items</p>
             </div>
 
             <div className="stat-card">
               <div className="stat-card-header">
                 <span className="stat-label">Active Products</span>
                 <span className="stat-icon-wrap stat-icon-success">
-                  <PackageIcon size={16} />
+                  <PackageIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.productCount ?? 0}</p>
@@ -298,7 +305,7 @@ export default function RetailerDashboard() {
               <div className="stat-card-header">
                 <span className="stat-label">Low Stock Alerts</span>
                 <span className="stat-icon-wrap stat-icon-warning">
-                  <AlertTriangleIcon size={16} />
+                  <AlertTriangleIcon size={14} />
                 </span>
               </div>
               <p className={`stat-value ${stats?.lowStockCount > 0 ? "text-danger" : ""}`}>
@@ -309,7 +316,7 @@ export default function RetailerDashboard() {
           </div>
 
           {/* Recent Orders Preview */}
-          <div className="card" style={{ marginTop: "20px" }}>
+          <div className="card" style={{ marginTop: "8px" }}>
             <div className="card-header flex-between">
               <div>
                 <h3 className="card-title">Recent Order Items</h3>
@@ -325,7 +332,7 @@ export default function RetailerDashboard() {
             </div>
 
             {flattenedOrderItems.length === 0 ? (
-              <p className="text-muted text-sm" style={{ padding: "16px 0" }}>
+              <p className="text-muted text-xs" style={{ padding: "8px 0" }}>
                 No customer orders received yet.
               </p>
             ) : (
@@ -369,16 +376,16 @@ export default function RetailerDashboard() {
         <div className="tab-content">
           <div className="card">
             <div className="card-header flex-between flex-wrap gap-2">
-              <div className="search-bar" style={{ maxWidth: "320px", margin: 0 }}>
+              <div className="search-bar" style={{ maxWidth: "240px", margin: 0, height: "28px" }}>
                 <span className="search-icon">
-                  <SearchIcon size={15} />
+                  <SearchIcon size={12} />
                 </span>
                 <input
                   placeholder="Filter products..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="search-input"
-                  style={{ padding: "8px 0", fontSize: "14px" }}
+                  style={{ padding: "2px 0", fontSize: "12px" }}
                 />
               </div>
 
@@ -387,15 +394,15 @@ export default function RetailerDashboard() {
                 className="btn btn-primary btn-sm"
                 onClick={() => setIsAddModalOpen(true)}
               >
-                <PlusIcon size={14} />
+                <PlusIcon size={12} />
                 Add Product
               </button>
             </div>
 
             {filteredProducts.length === 0 ? (
-              <div className="empty-state" style={{ padding: "40px 16px" }}>
-                <PackageIcon size={30} color="#94a3b8" />
-                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+              <div className="empty-state" style={{ padding: "24px 12px" }}>
+                <PackageIcon size={24} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "13px", marginTop: "6px" }}>
                   {productSearch ? "No matching products found" : "No products added yet"}
                 </h3>
                 <p className="empty-sub text-xs">
@@ -425,9 +432,9 @@ export default function RetailerDashboard() {
                       return (
                         <tr key={p._id}>
                           <td>
-                            <div className="font-semibold text-sm">{p.name}</div>
+                            <div className="font-semibold text-xs">{p.name}</div>
                             {p.description && (
-                              <div className="text-muted text-xs truncate" style={{ maxWidth: "260px" }}>
+                              <div className="text-muted text-xs truncate" style={{ maxWidth: "220px" }}>
                                 {p.description}
                               </div>
                             )}
@@ -445,24 +452,24 @@ export default function RetailerDashboard() {
                                   value={stockValue}
                                   onChange={(e) => setStockValue(e.target.value)}
                                   className="form-input form-input-sm"
-                                  style={{ width: "70px", padding: "4px 6px" }}
+                                  style={{ width: "55px", padding: "2px 4px", fontSize: "11px" }}
                                   disabled={savingStock}
                                   autoFocus
                                 />
                                 <button
                                   type="button"
                                   className="btn btn-primary btn-sm"
-                                  style={{ padding: "4px 8px" }}
+                                  style={{ padding: "2px 5px" }}
                                   onClick={() => handleUpdateStock(p._id)}
                                   disabled={savingStock}
                                   title="Save stock"
                                 >
-                                  <CheckIcon size={13} />
+                                  <CheckIcon size={11} />
                                 </button>
                                 <button
                                   type="button"
                                   className="btn btn-ghost btn-sm"
-                                  style={{ padding: "4px 8px" }}
+                                  style={{ padding: "2px 5px" }}
                                   onClick={() => {
                                     setEditingStockId(null);
                                     setStockValue("");
@@ -470,11 +477,11 @@ export default function RetailerDashboard() {
                                   disabled={savingStock}
                                   title="Cancel"
                                 >
-                                  <XIcon size={13} />
+                                  <XIcon size={11} />
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex-center gap-2">
+                              <div className="flex-center gap-1">
                                 <StatusBadge
                                   status={isOutOfStock ? "out-of-stock" : isLowStock ? "low-stock" : "in-stock"}
                                   label={`${p.stock} units`}
@@ -488,8 +495,9 @@ export default function RetailerDashboard() {
                                     setStockValue(p.stock);
                                   }}
                                   title="Edit stock quantity"
+                                  style={{ padding: "2px" }}
                                 >
-                                  <EditIcon size={13} />
+                                  <EditIcon size={12} />
                                 </button>
                               </div>
                             )}
@@ -500,8 +508,9 @@ export default function RetailerDashboard() {
                               className="btn btn-ghost btn-sm text-danger"
                               onClick={() => handleDeleteProduct(p._id, p.name)}
                               title="Delete product"
+                              style={{ padding: "2px 5px" }}
                             >
-                              <TrashIcon size={13} />
+                              <TrashIcon size={12} />
                               <span>Delete</span>
                             </button>
                           </td>
@@ -533,7 +542,7 @@ export default function RetailerDashboard() {
                   value={orderStatusFilter}
                   onChange={(e) => setOrderStatusFilter(e.target.value)}
                   className="form-select form-select-sm"
-                  style={{ width: "auto" }}
+                  style={{ width: "auto", padding: "2px 6px" }}
                 >
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -544,9 +553,9 @@ export default function RetailerDashboard() {
             </div>
 
             {flattenedOrderItems.length === 0 ? (
-              <div className="empty-state" style={{ padding: "40px 16px" }}>
-                <BagIcon size={30} color="#94a3b8" />
-                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+              <div className="empty-state" style={{ padding: "24px 12px" }}>
+                <BagIcon size={24} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "13px", marginTop: "6px" }}>
                   No orders found
                 </h3>
                 <p className="empty-sub text-xs">
@@ -565,7 +574,7 @@ export default function RetailerDashboard() {
                       <th>Product</th>
                       <th style={{ textAlign: "center" }}>Qty</th>
                       <th style={{ textAlign: "right" }}>Total</th>
-                      <th style={{ width: "160px" }}>Fulfillment Action</th>
+                      <th style={{ width: "130px" }}>Fulfillment Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -580,18 +589,18 @@ export default function RetailerDashboard() {
                           </div>
                         </td>
                         <td>
-                          <div className="font-semibold text-sm">{row.customerName}</div>
+                          <div className="font-semibold text-xs">{row.customerName}</div>
                           {row.customerEmail && (
                             <div className="text-muted text-xs">{row.customerEmail}</div>
                           )}
                           {row.address && (
-                            <div className="text-muted text-xs truncate" style={{ maxWidth: "220px" }} title={row.address}>
+                            <div className="text-muted text-xs truncate" style={{ maxWidth: "180px" }} title={row.address}>
                               {row.address}
                             </div>
                           )}
                         </td>
                         <td>
-                          <div className="font-medium text-sm">{row.item.name}</div>
+                          <div className="font-medium text-xs">{row.item.name}</div>
                           <div className="text-muted text-xs">₹{row.item.price} each</div>
                         </td>
                         <td style={{ textAlign: "center", fontWeight: 600 }}>{row.item.qty}</td>
@@ -605,6 +614,7 @@ export default function RetailerDashboard() {
                               handleStatusChange(row.orderId, row.item.product, e.target.value)
                             }
                             className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
+                            style={{ padding: "2px 5px", fontSize: "11px" }}
                           >
                             <option value="pending">Pending</option>
                             <option value="fulfilled">Fulfilled</option>
@@ -635,7 +645,7 @@ export default function RetailerDashboard() {
                 className="btn btn-secondary btn-sm"
                 onClick={() => window.print()}
               >
-                <PrinterIcon size={14} />
+                <PrinterIcon size={12} />
                 Print Summary Report
               </button>
             </div>
@@ -644,28 +654,28 @@ export default function RetailerDashboard() {
               <div className="report-metric-box">
                 <span className="text-muted text-xs uppercase font-semibold">Total Revenue</span>
                 <span className="report-metric-val">₹{stats?.salesTotal ?? 0}</span>
-                <span className="text-muted text-xs">Accumulated revenue from sales</span>
+                <span className="text-muted text-xs">From fulfilled sales</span>
               </div>
               <div className="report-metric-box">
-                <span className="text-muted text-xs uppercase font-semibold">Total Orders Processed</span>
+                <span className="text-muted text-xs uppercase font-semibold">Total Orders</span>
                 <span className="report-metric-val">{stats?.orderCount ?? 0}</span>
-                <span className="text-muted text-xs">Customer line items ordered</span>
+                <span className="text-muted text-xs">Customer line items</span>
               </div>
               <div className="report-metric-box">
                 <span className="text-muted text-xs uppercase font-semibold">Listed Products</span>
                 <span className="report-metric-val">{stats?.productCount ?? 0}</span>
-                <span className="text-muted text-xs">Total unique SKU catalog entries</span>
+                <span className="text-muted text-xs">Total catalog SKUs</span>
               </div>
               <div className="report-metric-box">
-                <span className="text-muted text-xs uppercase font-semibold">Low Stock Products</span>
+                <span className="text-muted text-xs uppercase font-semibold">Low Stock</span>
                 <span className="report-metric-val text-danger">{stats?.lowStockCount ?? 0}</span>
-                <span className="text-muted text-xs">Items with stock &lt; 5 units</span>
+                <span className="text-muted text-xs">Items with stock &lt; 5</span>
               </div>
             </div>
 
             {/* Category breakdown from actual products */}
-            <div style={{ marginTop: "24px" }}>
-              <h4 className="font-semibold text-sm" style={{ marginBottom: "12px" }}>
+            <div style={{ marginTop: "10px" }}>
+              <h4 className="font-semibold text-xs" style={{ marginBottom: "6px" }}>
                 Catalog Distribution by Category
               </h4>
               <div className="table-wrapper">
@@ -697,40 +707,25 @@ export default function RetailerDashboard() {
         </div>
       )}
 
-      {/* Add Product Modal */}
+      {/* Ultra-Compact Add Product Modal */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Product to Store"
-        maxWidth="500px"
+        maxWidth="480px"
       >
         <form onSubmit={handleAddProduct}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="prod-name">Product Name *</label>
-            <input
-              id="prod-name"
-              type="text"
-              required
-              className="form-input"
-              placeholder="e.g. Organic Brown Rice 1kg"
-              value={form.name}
-              onChange={(e) => updateForm("name", e.target.value)}
-            />
-          </div>
-
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="prod-price">Price (₹) *</label>
+              <label className="form-label" htmlFor="prod-name">Product Name *</label>
               <input
-                id="prod-price"
-                type="number"
-                min="0"
-                step="0.01"
+                id="prod-name"
+                type="text"
                 required
                 className="form-input"
-                placeholder="e.g. 150"
-                value={form.price}
-                onChange={(e) => updateForm("price", e.target.value)}
+                placeholder="e.g. Organic Brown Rice 1kg"
+                value={form.name}
+                onChange={(e) => updateForm("name", e.target.value)}
               />
             </div>
             <div className="form-group">
@@ -748,9 +743,23 @@ export default function RetailerDashboard() {
             </div>
           </div>
 
-          <div className="form-row">
+          <div className="form-row-3">
             <div className="form-group">
-              <label className="form-label" htmlFor="prod-stock">Initial Stock Quantity</label>
+              <label className="form-label" htmlFor="prod-price">Price (₹) *</label>
+              <input
+                id="prod-price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                className="form-input"
+                placeholder="e.g. 150"
+                value={form.price}
+                onChange={(e) => updateForm("price", e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="prod-stock">Stock Quantity</label>
               <input
                 id="prod-stock"
                 type="number"
@@ -762,12 +771,12 @@ export default function RetailerDashboard() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="prod-image">Image URL (Optional)</label>
+              <label className="form-label" htmlFor="prod-image">Image URL</label>
               <input
                 id="prod-image"
                 type="url"
                 className="form-input"
-                placeholder="https://example.com/item.jpg"
+                placeholder="https://..."
                 value={form.imageUrl}
                 onChange={(e) => updateForm("imageUrl", e.target.value)}
               />
@@ -789,7 +798,7 @@ export default function RetailerDashboard() {
           <div className="modal-actions">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-sm"
               onClick={() => setIsAddModalOpen(false)}
               disabled={submittingProduct}
             >
@@ -797,7 +806,7 @@ export default function RetailerDashboard() {
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm"
               disabled={submittingProduct}
             >
               {submittingProduct ? "Creating..." : "Save Product"}

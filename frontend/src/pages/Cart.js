@@ -53,13 +53,13 @@ export default function Cart() {
       <div className="page">
         <div className="empty-state">
           <div className="empty-icon-wrap">
-            <CartIcon size={32} />
+            <CartIcon size={26} />
           </div>
           <h2 className="empty-title">Your shopping cart is empty</h2>
-          <p className="empty-sub">Browse our cloud storefront catalog to add items to your cart.</p>
-          <Link to="/" className="btn btn-primary" style={{ marginTop: "16px" }}>
+          <p className="empty-sub">Browse our cloud catalog to add products to your cart.</p>
+          <Link to="/" className="btn btn-primary btn-sm" style={{ marginTop: "12px" }}>
             Browse Storefront
-            <ArrowRightIcon size={14} />
+            <ArrowRightIcon size={13} />
           </Link>
         </div>
       </div>
@@ -81,14 +81,15 @@ export default function Cart() {
               cart.clearCart();
             }
           }}
+          style={{ padding: "3px 8px" }}
         >
-          <TrashIcon size={14} />
-          Clear Cart
+          <TrashIcon size={13} />
+          <span>Clear</span>
         </button>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
+        <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
           <p>{error}</p>
         </div>
       )}
@@ -97,15 +98,16 @@ export default function Cart() {
         {/* Left Column: Cart Items */}
         <div className="checkout-items-col">
           <div className="card">
-            <div className="card-header">
+            <div className="card-header flex-between">
               <h2 className="card-title">Cart Items ({cart.count})</h2>
+              <span className="text-muted text-xs">Total items: {cart.count}</span>
             </div>
             <div className="cart-items-list">
               {cart.items.map((item) => (
                 <div key={item.productId} className="cart-item-row">
                   <div className="cart-item-info">
                     <div className="cart-item-icon">
-                      <PackageIcon size={18} />
+                      <PackageIcon size={15} />
                     </div>
                     <div>
                       <h4 className="cart-item-name">{item.name}</h4>
@@ -121,7 +123,7 @@ export default function Cart() {
                         onClick={() => cart.decrement(item.productId)}
                         aria-label="Decrease quantity"
                       >
-                        <MinusIcon size={12} />
+                        <MinusIcon size={10} />
                       </button>
                       <span className="qty-value">{item.qty}</span>
                       <button
@@ -130,7 +132,7 @@ export default function Cart() {
                         onClick={() => cart.increment(item.productId)}
                         aria-label="Increase quantity"
                       >
-                        <PlusIcon size={12} />
+                        <PlusIcon size={10} />
                       </button>
                     </div>
 
@@ -145,7 +147,7 @@ export default function Cart() {
                       title="Remove item"
                       aria-label="Remove item"
                     >
-                      <TrashIcon size={15} />
+                      <TrashIcon size={13} />
                     </button>
                   </div>
                 </div>
@@ -154,58 +156,49 @@ export default function Cart() {
           </div>
         </div>
 
-        {/* Right Column: Delivery Address & Summary */}
+        {/* Right Column: Delivery Address & Summary (Sticky) */}
         <div className="checkout-summary-col">
-          {/* Delivery Address Card */}
           <div className="card">
             <div className="card-header">
-              <div className="flex-center gap-2">
-                <MapPinIcon size={16} />
+              <div className="flex-center gap-1">
+                <MapPinIcon size={14} color="#64748b" />
                 <h3 className="card-title">Delivery Address</h3>
               </div>
             </div>
-            <div className="form-group" style={{ marginBottom: "8px" }}>
-              <label htmlFor="delivery-address" className="form-label">
-                Full Street Address
-              </label>
+            <div className="form-group" style={{ marginBottom: "4px" }}>
               <textarea
                 id="delivery-address"
                 className="form-input form-textarea"
-                placeholder="House / Flat No., Street, Area, City, Postal Code"
+                placeholder="Flat / House No., Street, Area, City, Postal Code"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                rows={3}
+                rows={2}
               />
             </div>
-            <div className="text-muted text-xs text-right">
+            <div className="text-muted text-xs text-right" style={{ marginBottom: "10px" }}>
               {address.length} characters
             </div>
-          </div>
 
-          {/* Order Calculation Card */}
-          <div className="card" style={{ marginTop: "16px" }}>
-            <div className="card-header">
-              <h3 className="card-title">Order Summary</h3>
-            </div>
-            
+            <div className="summary-divider" />
+
             <div className="summary-row">
               <span className="text-muted">Subtotal ({cart.count} items)</span>
               <span className="font-semibold">₹{cart.total}</span>
             </div>
             <div className="summary-row">
-              <span className="text-muted">Estimated Delivery</span>
+              <span className="text-muted">Delivery</span>
               <span className="text-success font-semibold">FREE</span>
             </div>
             <div className="summary-divider" />
             <div className="summary-total-row">
-              <span className="font-bold">Total Amount</span>
+              <span className="font-bold">Total</span>
               <span className="font-bold text-primary summary-total-price">₹{cart.total}</span>
             </div>
 
             <button
               type="button"
               className="btn btn-primary btn-block"
-              style={{ marginTop: "16px" }}
+              style={{ marginTop: "12px", padding: "7px 12px" }}
               onClick={handlePlaceOrder}
               disabled={placing}
             >
@@ -213,14 +206,14 @@ export default function Cart() {
                 <span>Placing order...</span>
               ) : (
                 <>
-                  <CheckCircleIcon size={16} />
+                  <CheckCircleIcon size={14} />
                   <span>Place Order (₹{cart.total})</span>
                 </>
               )}
             </button>
 
-            <p className="text-muted text-xs text-center" style={{ marginTop: "12px" }}>
-              Secure cloud transaction. No payment info stored.
+            <p className="text-muted text-xs text-center" style={{ marginTop: "8px", fontSize: "0.7rem" }}>
+              Secure cloud transaction.
             </p>
           </div>
         </div>

@@ -38,14 +38,14 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card card">
         <div className="auth-header">
-          <span className="brand-mark" style={{ margin: "0 auto 12px" }}>LS</span>
+          <span className="brand-mark" style={{ margin: "0 auto 8px" }}>LS</span>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to your LocalShop Cloud account</p>
         </div>
 
         {error && (
-          <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
-            <AlertCircleIcon size={16} />
+          <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
+            <AlertCircleIcon size={14} />
             <span>{error}</span>
           </div>
         )}
@@ -66,7 +66,7 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <div className="flex-between" style={{ marginBottom: "4px" }}>
+            <div className="flex-between" style={{ marginBottom: "2px" }}>
               <label className="form-label" htmlFor="login-password" style={{ margin: 0 }}>Password</label>
             </div>
             <div className="password-input-wrapper">
@@ -87,7 +87,7 @@ export default function Login() {
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                {showPassword ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
               </button>
             </div>
           </div>
@@ -96,15 +96,24 @@ export default function Login() {
             type="submit"
             className="btn btn-primary btn-block"
             disabled={loading}
-            style={{ marginTop: "20px" }}
+            style={{ marginTop: "12px", padding: "7px 12px" }}
           >
-            {loading ? "Signing in..." : "Sign in"}
-            <ArrowRightIcon size={14} />
+            {loading ? (
+              <span>Authenticating...</span>
+            ) : (
+              <>
+                <span>Sign in</span>
+                <ArrowRightIcon size={13} />
+              </>
+            )}
           </button>
         </form>
 
         <div className="auth-footer">
-          Don't have an account? <Link to="/register" className="auth-link">Create one</Link>
+          <span>Don't have an account? </span>
+          <Link to="/register" className="auth-link">
+            Create one
+          </Link>
         </div>
       </div>
     </div>

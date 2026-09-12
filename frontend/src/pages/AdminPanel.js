@@ -83,13 +83,13 @@ export default function AdminPanel() {
           onClick={loadAll} 
           disabled={loading}
         >
-          <RefreshCwIcon size={14} className={loading ? "spin" : ""} />
+          <RefreshCwIcon size={13} className={loading ? "spin" : ""} />
           Refresh
         </button>
       </div>
 
       {error && (
-        <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
+        <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
           <p>{error}</p>
         </div>
       )}
@@ -103,7 +103,7 @@ export default function AdminPanel() {
           className={`tab-btn ${activeTab === "overview" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("overview")}
         >
-          <ShieldIcon size={15} />
+          <ShieldIcon size={14} />
           Overview
         </button>
         <button
@@ -113,7 +113,7 @@ export default function AdminPanel() {
           className={`tab-btn ${activeTab === "approvals" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("approvals")}
         >
-          <StoreIcon size={15} />
+          <StoreIcon size={14} />
           Retailer Approvals {pending.length > 0 && <span className="tab-badge">{pending.length}</span>}
         </button>
         <button
@@ -123,7 +123,7 @@ export default function AdminPanel() {
           className={`tab-btn ${activeTab === "retailers" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("retailers")}
         >
-          <UserIcon size={15} />
+          <UserIcon size={14} />
           All Retailers ({allRetailers.length})
         </button>
         <button
@@ -133,7 +133,7 @@ export default function AdminPanel() {
           className={`tab-btn ${activeTab === "system" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("system")}
         >
-          <ServerIcon size={15} />
+          <ServerIcon size={14} />
           System Status
         </button>
       </div>
@@ -146,7 +146,7 @@ export default function AdminPanel() {
               <div className="stat-card-header">
                 <span className="stat-label">Approved Retailers</span>
                 <span className="stat-icon-wrap stat-icon-primary">
-                  <StoreIcon size={16} />
+                  <StoreIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.retailerCount ?? 0}</p>
@@ -157,7 +157,7 @@ export default function AdminPanel() {
               <div className="stat-card-header">
                 <span className="stat-label">Registered Customers</span>
                 <span className="stat-icon-wrap stat-icon-info">
-                  <UserIcon size={16} />
+                  <UserIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.customerCount ?? 0}</p>
@@ -168,7 +168,7 @@ export default function AdminPanel() {
               <div className="stat-card-header">
                 <span className="stat-label">Platform Products</span>
                 <span className="stat-icon-wrap stat-icon-success">
-                  <PackageIcon size={16} />
+                  <PackageIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.productCount ?? 0}</p>
@@ -179,7 +179,7 @@ export default function AdminPanel() {
               <div className="stat-card-header">
                 <span className="stat-label">Total Cloud Orders</span>
                 <span className="stat-icon-wrap stat-icon-warning">
-                  <BagIcon size={16} />
+                  <BagIcon size={14} />
                 </span>
               </div>
               <p className="stat-value">{stats?.orderCount ?? 0}</p>
@@ -189,7 +189,7 @@ export default function AdminPanel() {
 
           {/* Pending Approvals quick-card if any */}
           {pending.length > 0 && (
-            <div className="alert alert-warning" style={{ marginTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="alert alert-warning" style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <strong>Action Required:</strong> You have {pending.length} pending retailer approval{pending.length === 1 ? "" : "s"} waiting for review.
               </div>
@@ -204,7 +204,7 @@ export default function AdminPanel() {
           )}
 
           {/* Platform Summary Details */}
-          <div className="card" style={{ marginTop: "20px" }}>
+          <div className="card" style={{ marginTop: "10px" }}>
             <div className="card-header">
               <h3 className="card-title">Platform Activity Snapshot</h3>
             </div>
@@ -256,9 +256,9 @@ export default function AdminPanel() {
             </div>
 
             {pending.length === 0 ? (
-              <div className="empty-state" style={{ padding: "40px 16px" }}>
-                <CheckCircleIcon size={32} color="#10b981" />
-                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+              <div className="empty-state" style={{ padding: "28px 14px" }}>
+                <CheckCircleIcon size={28} color="#10b981" />
+                <h3 className="empty-title" style={{ fontSize: "14px", marginTop: "8px" }}>
                   All caught up!
                 </h3>
                 <p className="empty-sub text-xs">
@@ -280,7 +280,7 @@ export default function AdminPanel() {
                     {pending.map((r) => (
                       <tr key={r._id}>
                         <td>
-                          <div className="font-semibold text-sm">{r.shopName || "Unnamed Store"}</div>
+                          <div className="font-semibold text-xs">{r.shopName || "Unnamed Store"}</div>
                           <div className="text-muted text-xs">Owner: {r.name}</div>
                         </td>
                         <td className="font-mono text-xs">{r.email}</td>
@@ -288,14 +288,15 @@ export default function AdminPanel() {
                           {r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-IN") : "Recent"}
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <div className="flex-center gap-2 justify-end">
+                          <div className="flex-center gap-1 justify-end">
                             <button
                               type="button"
                               className="btn btn-ghost btn-sm text-danger"
                               onClick={() => handleReject(r._id, r.shopName || r.name)}
                               title="Reject retailer application"
+                              style={{ padding: "2px 6px" }}
                             >
-                              <XIcon size={13} />
+                              <XIcon size={12} />
                               <span>Reject</span>
                             </button>
                             <button
@@ -303,8 +304,9 @@ export default function AdminPanel() {
                               className="btn btn-primary btn-sm"
                               onClick={() => handleApprove(r._id, r.shopName || r.name)}
                               title="Approve retailer application"
+                              style={{ padding: "2px 6px" }}
                             >
-                              <CheckIcon size={13} />
+                              <CheckIcon size={12} />
                               <span>Approve</span>
                             </button>
                           </div>
@@ -329,9 +331,9 @@ export default function AdminPanel() {
             </div>
 
             {allRetailers.length === 0 ? (
-              <div className="empty-state" style={{ padding: "40px 16px" }}>
-                <StoreIcon size={30} color="#94a3b8" />
-                <h3 className="empty-title" style={{ fontSize: "16px", marginTop: "10px" }}>
+              <div className="empty-state" style={{ padding: "28px 14px" }}>
+                <StoreIcon size={26} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "14px", marginTop: "8px" }}>
                   No retailers found
                 </h3>
               </div>
@@ -350,7 +352,7 @@ export default function AdminPanel() {
                   <tbody>
                     {allRetailers.map((r) => (
                       <tr key={r._id}>
-                        <td className="font-semibold text-sm">{r.shopName || "Unnamed Store"}</td>
+                        <td className="font-semibold text-xs">{r.shopName || "Unnamed Store"}</td>
                         <td>{r.name}</td>
                         <td className="font-mono text-xs">{r.email}</td>
                         <td>
@@ -366,8 +368,9 @@ export default function AdminPanel() {
                             className="btn btn-ghost btn-sm text-danger"
                             onClick={() => handleReject(r._id, r.shopName || r.name)}
                             title="Remove retailer"
+                            style={{ padding: "2px 6px" }}
                           >
-                            <XIcon size={13} />
+                            <XIcon size={12} />
                             <span>Remove</span>
                           </button>
                         </td>
@@ -404,7 +407,7 @@ export default function AdminPanel() {
                   <tr>
                     <td>
                       <div className="flex-center gap-2">
-                        <ServerIcon size={16} />
+                        <ServerIcon size={14} />
                         <span className="font-medium">REST API Backend</span>
                       </div>
                     </td>
@@ -417,7 +420,7 @@ export default function AdminPanel() {
                   <tr>
                     <td>
                       <div className="flex-center gap-2">
-                        <DatabaseIcon size={16} />
+                        <DatabaseIcon size={14} />
                         <span className="font-medium">Cloud Database</span>
                       </div>
                     </td>
@@ -430,7 +433,7 @@ export default function AdminPanel() {
                   <tr>
                     <td>
                       <div className="flex-center gap-2">
-                        <ShieldIcon size={16} />
+                        <ShieldIcon size={14} />
                         <span className="font-medium">Authentication Authority</span>
                       </div>
                     </td>

@@ -48,16 +48,16 @@ export default function CustomerOrders() {
         <button 
           type="button" 
           className="btn btn-secondary btn-sm" 
-          onClick={loadOrders}
+          onClick={loadOrders} 
           disabled={loading}
         >
-          <RefreshCwIcon size={14} className={loading ? "spin" : ""} />
+          <RefreshCwIcon size={13} className={loading ? "spin" : ""} />
           Refresh
         </button>
       </div>
 
       {error && (
-        <div className="alert alert-danger">
+        <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
           <p>{error}</p>
         </div>
       )}
@@ -65,23 +65,23 @@ export default function CustomerOrders() {
       {loading ? (
         <div className="card-stack">
           {[1, 2].map((i) => (
-            <div key={i} className="card skeleton-card">
-              <div className="skeleton skeleton-line" style={{ width: "40%", height: "20px" }} />
-              <div className="skeleton skeleton-line" style={{ width: "70%", height: "14px" }} />
-              <div className="skeleton skeleton-line" style={{ width: "100%", height: "40px", marginTop: "12px" }} />
+            <div key={i} className="card skeleton-card" style={{ padding: "12px 14px" }}>
+              <div className="skeleton" style={{ width: "30%", height: "16px", marginBottom: "8px" }} />
+              <div className="skeleton" style={{ width: "60%", height: "12px", marginBottom: "10px" }} />
+              <div className="skeleton" style={{ width: "100%", height: "30px" }} />
             </div>
           ))}
         </div>
       ) : orders.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon-wrap">
-            <BagIcon size={32} />
+            <BagIcon size={26} />
           </div>
           <h2 className="empty-title">No orders yet</h2>
           <p className="empty-sub">You haven't placed any orders yet. Discover items from local retailers.</p>
-          <Link to="/" className="btn btn-primary" style={{ marginTop: "16px" }}>
+          <Link to="/" className="btn btn-primary btn-sm" style={{ marginTop: "12px" }}>
             Browse Storefront
-            <ArrowRightIcon size={14} />
+            <ArrowRightIcon size={13} />
           </Link>
         </div>
       ) : (
@@ -95,12 +95,12 @@ export default function CustomerOrders() {
                     <span className="order-id-val">#{order._id.slice(-6).toUpperCase()}</span>
                   </div>
                   <div className="order-meta-item">
-                    <ClockIcon size={13} />
+                    <ClockIcon size={12} />
                     <span>{formatDate(order.createdAt)}</span>
                   </div>
                   {order.address && (
                     <div className="order-meta-item order-address">
-                      <MapPinIcon size={13} />
+                      <MapPinIcon size={12} />
                       <span title={order.address}>{order.address}</span>
                     </div>
                   )}
@@ -111,21 +111,21 @@ export default function CustomerOrders() {
                 </div>
               </div>
 
-              <div className="table-wrapper" style={{ marginTop: "12px" }}>
+              <div className="table-wrapper" style={{ marginTop: "6px" }}>
                 <table className="data-table">
                   <thead>
                     <tr>
                       <th>Product</th>
-                      <th style={{ width: "80px", textAlign: "center" }}>Qty</th>
-                      <th style={{ width: "110px", textAlign: "right" }}>Unit Price</th>
-                      <th style={{ width: "110px", textAlign: "right" }}>Subtotal</th>
-                      <th style={{ width: "130px", textAlign: "center" }}>Item Status</th>
+                      <th style={{ width: "60px", textAlign: "center" }}>Qty</th>
+                      <th style={{ width: "90px", textAlign: "right" }}>Unit Price</th>
+                      <th style={{ width: "90px", textAlign: "right" }}>Subtotal</th>
+                      <th style={{ width: "110px", textAlign: "center" }}>Item Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {order.items?.map((item, idx) => (
                       <tr key={idx}>
-                        <td className="font-medium">{item.name}</td>
+                        <td className="font-medium text-xs">{item.name}</td>
                         <td style={{ textAlign: "center" }}>{item.qty}</td>
                         <td style={{ textAlign: "right" }}>₹{item.price}</td>
                         <td style={{ textAlign: "right", fontWeight: 600 }}>₹{item.price * item.qty}</td>

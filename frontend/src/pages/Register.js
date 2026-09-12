@@ -49,21 +49,21 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card card">
         <div className="auth-header">
-          <span className="brand-mark" style={{ margin: "0 auto 12px" }}>LS</span>
+          <span className="brand-mark" style={{ margin: "0 auto 8px" }}>LS</span>
           <h1 className="auth-title">Create an Account</h1>
           <p className="auth-subtitle">Join the LocalShop Cloud retail platform</p>
         </div>
 
         {error && (
-          <div className="alert alert-danger" style={{ marginBottom: "16px" }}>
-            <AlertCircleIcon size={16} />
+          <div className="alert alert-danger" style={{ marginBottom: "10px" }}>
+            <AlertCircleIcon size={14} />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="alert alert-success" style={{ marginBottom: "16px" }}>
-            <CheckCircleIcon size={16} />
+          <div className="alert alert-success" style={{ marginBottom: "10px" }}>
+            <CheckCircleIcon size={14} />
             <span>{success}</span>
           </div>
         )}
@@ -76,7 +76,7 @@ export default function Register() {
               className={`role-option-btn ${form.role === "customer" ? "active" : ""}`}
               onClick={() => update("role", "customer")}
             >
-              <UserIcon size={16} />
+              <UserIcon size={14} />
               <span>Customer</span>
             </button>
             <button
@@ -84,7 +84,7 @@ export default function Register() {
               className={`role-option-btn ${form.role === "retailer" ? "active" : ""}`}
               onClick={() => update("role", "retailer")}
             >
-              <StoreIcon size={16} />
+              <StoreIcon size={14} />
               <span>Retailer</span>
             </button>
           </div>
@@ -102,6 +102,21 @@ export default function Register() {
             />
           </div>
 
+          {form.role === "retailer" && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-shopname">Shop / Business Name</label>
+              <input
+                id="reg-shopname"
+                type="text"
+                required
+                className="form-input"
+                placeholder="e.g. Kumar Fresh Mart"
+                value={form.shopName}
+                onChange={(e) => update("shopName", e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label" htmlFor="reg-email">Email Address</label>
             <input
@@ -117,7 +132,9 @@ export default function Register() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="reg-password">Password</label>
+            <div className="flex-between" style={{ marginBottom: "2px" }}>
+              <label className="form-label" htmlFor="reg-password" style={{ margin: 0 }}>Password</label>
+            </div>
             <div className="password-input-wrapper">
               <input
                 id="reg-password"
@@ -136,40 +153,33 @@ export default function Register() {
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                {showPassword ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
               </button>
             </div>
           </div>
-
-          {form.role === "retailer" && (
-            <div className="form-group">
-              <label className="form-label" htmlFor="reg-shop">Shop / Store Name *</label>
-              <input
-                id="reg-shop"
-                type="text"
-                required
-                className="form-input"
-                placeholder="e.g. Fresh Daily Supermarket"
-                value={form.shopName}
-                onChange={(e) => update("shopName", e.target.value)}
-              />
-              <span className="text-muted text-xs">Retailers require approval by admin before selling.</span>
-            </div>
-          )}
 
           <button
             type="submit"
             className="btn btn-primary btn-block"
             disabled={loading}
-            style={{ marginTop: "20px" }}
+            style={{ marginTop: "12px", padding: "7px 12px" }}
           >
-            {loading ? "Creating account..." : "Complete Registration"}
-            <ArrowRightIcon size={14} />
+            {loading ? (
+              <span>Creating Account...</span>
+            ) : (
+              <>
+                <span>Complete Registration</span>
+                <ArrowRightIcon size={13} />
+              </>
+            )}
           </button>
         </form>
 
         <div className="auth-footer">
-          Already registered? <Link to="/login" className="auth-link">Sign in</Link>
+          <span>Already registered? </span>
+          <Link to="/login" className="auth-link">
+            Sign in
+          </Link>
         </div>
       </div>
     </div>

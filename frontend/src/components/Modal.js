@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { XIcon } from "./Icons";
 
-export default function Modal({ isOpen, onClose, title, children, maxWidth = "520px" }) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = "480px" }) {
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === "Escape") onClose();
@@ -35,7 +35,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = "52
             onClick={onClose}
             aria-label="Close dialog"
           >
-            <XIcon size={18} />
+            <XIcon size={14} />
           </button>
         </div>
         <div className="modal-body">
