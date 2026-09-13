@@ -1,6 +1,5 @@
 import React from "react";
 import { CartIcon, PackageIcon, StoreIcon } from "./Icons";
-import StatusBadge from "./StatusBadge";
 
 export default function ProductCard({ product, onAdd }) {
   const isOutOfStock = product.stock <= 0;
@@ -25,7 +24,7 @@ export default function ProductCard({ product, onAdd }) {
           className="product-image-fallback" 
           style={{ display: product.imageUrl ? "none" : "flex" }}
         >
-          <PackageIcon size={32} color="#94a3b8" />
+          <PackageIcon size={28} color="#94a3b8" />
         </div>
         
         <div className="product-card-top-badges">
@@ -33,18 +32,27 @@ export default function ProductCard({ product, onAdd }) {
             <span className="product-category-tag">{product.category}</span>
           )}
           {isOutOfStock ? (
-            <StatusBadge status="out-of-stock" label="Out of stock" size="sm" />
+            <span className="product-stock-pill product-stock-out">
+              <span className="stock-dot stock-dot-red" />
+              Out of stock
+            </span>
           ) : isLowStock ? (
-            <StatusBadge status="low-stock" label={`Only ${product.stock} left`} size="sm" />
+            <span className="product-stock-pill product-stock-low">
+              <span className="stock-dot stock-dot-amber" />
+              Only {product.stock} left
+            </span>
           ) : (
-            <StatusBadge status="in-stock" label={`${product.stock} available`} size="sm" />
+            <span className="product-stock-pill product-stock-in">
+              <span className="stock-dot stock-dot-emerald" />
+              {product.stock} in stock
+            </span>
           )}
         </div>
       </div>
 
       <div className="product-content">
         <div className="product-shop-meta">
-          <StoreIcon size={13} color="#64748b" />
+          <StoreIcon size={12} color="#64748b" />
           <span className="product-shop-name" title={shopName}>{shopName}</span>
         </div>
 
@@ -60,17 +68,18 @@ export default function ProductCard({ product, onAdd }) {
           <div className="product-price-block">
             <span className="product-currency">₹</span>
             <span className="product-price-val">{product.price}</span>
+            <span className="product-price-tax">incl. taxes</span>
           </div>
 
           {onAdd && (
             <button
               type="button"
-              className={`btn btn-sm ${isOutOfStock ? "btn-disabled" : "btn-primary"}`}
+              className={`btn btn-sm ${isOutOfStock ? "btn-disabled" : "btn-primary product-add-btn"}`}
               onClick={() => onAdd(product)}
               disabled={isOutOfStock}
               title={isOutOfStock ? "Item is out of stock" : "Add to cart"}
             >
-              <CartIcon size={14} />
+              <CartIcon size={13} />
               <span>{isOutOfStock ? "Out of Stock" : "Add"}</span>
             </button>
           )}

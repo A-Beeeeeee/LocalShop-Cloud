@@ -3,7 +3,15 @@ import { api } from "../api";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import ProductCard from "../components/ProductCard";
-import { SearchIcon, XIcon, BagIcon, RefreshCwIcon } from "../components/Icons";
+import { 
+  SearchIcon, 
+  XIcon, 
+  BagIcon, 
+  RefreshCwIcon,
+  TruckIcon,
+  ShieldCheckIcon,
+  CreditCardIcon
+} from "../components/Icons";
 
 const CATEGORIES = ["All", "Groceries", "Apparel", "Home", "Electronics", "General"];
 
@@ -69,6 +77,52 @@ export default function Storefront() {
 
   return (
     <div className="page">
+      {/* Hyperlocal Welcome Hero Banner */}
+      <div className="storefront-hero">
+        <div className="hero-content">
+          <div className="hero-badge">
+            <span className="hero-badge-dot" />
+            <span>Hyperlocal Cloud Network • Live</span>
+          </div>
+          <h1 className="hero-title">
+            Neighborhood stores, <span className="text-gradient">delivered in minutes.</span>
+          </h1>
+          <p className="hero-subtitle">
+            Order fresh groceries, apparel, and daily essentials directly from verified local retailers with live tracking.
+          </p>
+        </div>
+
+        <div className="hero-perks">
+          <div className="hero-perk-item">
+            <div className="hero-perk-icon hero-perk-blue">
+              <TruckIcon size={14} />
+            </div>
+            <div>
+              <span className="hero-perk-title">45-Min Express</span>
+              <span className="hero-perk-desc">Local neighborhood delivery</span>
+            </div>
+          </div>
+          <div className="hero-perk-item">
+            <div className="hero-perk-icon hero-perk-green">
+              <ShieldCheckIcon size={14} />
+            </div>
+            <div>
+              <span className="hero-perk-title">100% Verified</span>
+              <span className="hero-perk-desc">Quality checked sellers</span>
+            </div>
+          </div>
+          <div className="hero-perk-item">
+            <div className="hero-perk-icon hero-perk-purple">
+              <CreditCardIcon size={14} />
+            </div>
+            <div>
+              <span className="hero-perk-title">Razorpay & COD</span>
+              <span className="hero-perk-desc">Instant online refunds</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Compact Unified Search & Filter Toolbar */}
       <div className="storefront-toolbar">
         <div className="search-bar">
