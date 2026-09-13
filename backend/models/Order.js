@@ -6,7 +6,12 @@ const orderItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   qty: { type: Number, required: true },
-  status: { type: String, enum: ["pending", "fulfilled", "cancelled"], default: "pending" },
+  status: { 
+    type: String, 
+    enum: ["pending", "fulfilled", "cancelled", "return_requested", "refunded"], 
+    default: "pending" 
+  },
+  returnReason: { type: String, default: "" },
 });
 
 const orderSchema = new mongoose.Schema(
@@ -18,9 +23,13 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: { type: String, enum: ["razorpay", "cod"], default: "cod" },
     paymentStatus: { type: String, enum: ["paid", "pending"], default: "pending" },
     paymentId: { type: String },
+    refundStatus: { type: String, enum: ["none", "pending", "processed"], default: "none" },
+    refundAmount: { type: Number, default: 0 },
+    cancellationReason: { type: String, default: "" },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Order", orderSchema);
+
 

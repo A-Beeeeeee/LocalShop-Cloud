@@ -9,6 +9,12 @@ export default function StatusBadge({ status, label, size = "md" }) {
   if (["pending", "low-stock", "low_stock", "pending-approval"].includes(normalized)) {
     variant = "badge-warning";
     if (!label && normalized === "pending") displayLabel = "Pending";
+  } else if (["return-requested", "return_requested"].includes(normalized)) {
+    variant = "badge-warning";
+    if (!label) displayLabel = "Return Requested";
+  } else if (["refunded"].includes(normalized)) {
+    variant = "badge-retailer";
+    if (!label) displayLabel = "Refunded";
   } else if (["fulfilled", "approved", "in-stock", "in_stock", "active"].includes(normalized)) {
     variant = "badge-success";
     if (!label && normalized === "fulfilled") displayLabel = "Fulfilled";

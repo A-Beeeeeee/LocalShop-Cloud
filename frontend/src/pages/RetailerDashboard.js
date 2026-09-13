@@ -47,6 +47,7 @@ export default function RetailerDashboard() {
   const [savingStock, setSavingStock] = useState(false);
 
   // Add Product Modal state
+  // Add Product Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [imageInputMode, setImageInputMode] = useState("file"); // "file" | "url"
   const [form, setForm] = useState({
@@ -58,6 +59,20 @@ export default function RetailerDashboard() {
     imageUrl: "",
   });
   const [submittingProduct, setSubmittingProduct] = useState(false);
+
+  // Edit Product Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [editImageInputMode, setEditImageInputMode] = useState("file");
+  const [editForm, setEditForm] = useState({
+    name: "",
+    price: "",
+    category: "General",
+    stock: "",
+    description: "",
+    imageUrl: "",
+  });
+  const [savingEditProduct, setSavingEditProduct] = useState(false);
 
   // Search & Filters in Products and Orders tabs
   const [productSearch, setProductSearch] = useState("");
@@ -88,6 +103,24 @@ export default function RetailerDashboard() {
 
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function updateEditForm(field, value) {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleOpenEditModal(product) {
+    setEditingProductId(product._id);
+    setEditForm({
+      name: product.name || "",
+      price: product.price ?? "",
+      category: product.category || "General",
+      stock: product.stock ?? "",
+      description: product.description || "",
+      imageUrl: product.imageUrl || "",
+    });
+    setEditImageInputMode(product.imageUrl && product.imageUrl.startsWith("data:") ? "file" : "url");
+    setIsEditModalOpen(true);
   }
 
   function handleImageFileUpload(e) {
@@ -134,6 +167,83 @@ export default function RetailerDashboard() {
     };
     reader.readAsDataURL(file);
   }
+
+  function handleEditImageFileUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select a valid image file (PNG, JPG, JPEG, WEBP)", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size must be under 5MB", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        updateEditForm("imageUrl", optimizedDataUrl);
+        showToast("New image selected and optimized!", "success");
+      };
+      img.src = uploadEvent.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSaveEditProduct(e) {
+    e.preventDefault();
+    if (!editForm.name.trim() || editForm.price === "") {
+      showToast("Product name and price are required", "error");
+      return;
+    }
+    const priceNum = Number(editForm.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      showToast("Please enter a valid price", "error");
+      return;
+    }
+
+    setSavingEditProduct(true);
+    try {
+      await api.updateProduct(editingProductId, {
+        name: editForm.name.trim(),
+        price: priceNum,
+        category: editForm.category,
+        stock: Number(editForm.stock) || 0,
+        description: editForm.description.trim(),
+        imageUrl: editForm.imageUrl.trim() || "",
+      });
+      showToast(`Product "${editForm.name}" updated successfully!`, "success");
+      setIsEditModalOpen(false);
+      loadAll();
+    } catch (err) {
+      showToast(err.message || "Failed to update product", "error");
+    } finally {
+      setSavingEditProduct(false);
+    }
+  }
+
 
 
   async function handleAddProduct(e) {
@@ -565,16 +675,28 @@ export default function RetailerDashboard() {
                             )}
                           </td>
                           <td style={{ textAlign: "right" }}>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm text-danger"
-                              onClick={() => handleDeleteProduct(p._id, p.name)}
-                              title="Delete product"
-                              style={{ padding: "2px 5px" }}
-                            >
-                              <TrashIcon size={12} />
-                              <span>Delete</span>
-                            </button>
+                            <div className="flex-center justify-end gap-1">
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleOpenEditModal(p)}
+                                title="Edit product details & image"
+                                style={{ padding: "2px 6px", fontSize: "11px" }}
+                              >
+                                <EditIcon size={12} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm text-danger"
+                                onClick={() => handleDeleteProduct(p._id, p.name)}
+                                title="Delete product"
+                                style={{ padding: "2px 5px", fontSize: "11px" }}
+                              >
+                                <TrashIcon size={12} />
+                                <span>Delete</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -594,7 +716,7 @@ export default function RetailerDashboard() {
             <div className="card-header flex-between flex-wrap gap-2">
               <div>
                 <h3 className="card-title">Order Fulfillment</h3>
-                <p className="card-subtitle">Manage fulfillment status for each purchased item</p>
+                <p className="card-subtitle">Manage fulfillment status and process customer returns & refunds</p>
               </div>
 
               {/* Status Filter */}
@@ -609,6 +731,8 @@ export default function RetailerDashboard() {
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
                   <option value="fulfilled">Fulfilled</option>
+                  <option value="return_requested">Return Requested</option>
+                  <option value="refunded">Refunded</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
@@ -636,7 +760,7 @@ export default function RetailerDashboard() {
                       <th>Product</th>
                       <th style={{ textAlign: "center" }}>Qty</th>
                       <th style={{ textAlign: "right" }}>Total</th>
-                      <th style={{ width: "130px" }}>Fulfillment Action</th>
+                      <th style={{ width: "160px" }}>Fulfillment Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -675,6 +799,19 @@ export default function RetailerDashboard() {
                         <td>
                           <div className="font-medium text-xs">{row.item.name}</div>
                           <div className="text-muted text-xs">₹{row.item.price} each</div>
+                          {row.item.returnReason && (
+                            <div style={{
+                              marginTop: "4px",
+                              padding: "2px 6px",
+                              backgroundColor: "var(--color-warning-bg)",
+                              border: "1px solid var(--color-warning-border)",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              color: "var(--color-warning-text)"
+                            }}>
+                              <strong>Return:</strong> {row.item.returnReason}
+                            </div>
+                          )}
                         </td>
                         <td style={{ textAlign: "center", fontWeight: 600 }}>{row.item.qty}</td>
                         <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-primary)" }}>
@@ -687,10 +824,12 @@ export default function RetailerDashboard() {
                               handleStatusChange(row.orderId, row.item.product, e.target.value)
                             }
                             className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
-                            style={{ padding: "2px 5px", fontSize: "11px" }}
+                            style={{ padding: "3px 6px", fontSize: "11px", width: "100%" }}
                           >
                             <option value="pending">Pending</option>
                             <option value="fulfilled">Fulfilled</option>
+                            <option value="return_requested">Return Requested</option>
+                            <option value="refunded">Refunded (Approve Return)</option>
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </td>
@@ -1025,6 +1164,213 @@ export default function RetailerDashboard() {
               disabled={submittingProduct}
             >
               {submittingProduct ? "Creating..." : "Save Product"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Product Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Product Details"
+        maxWidth="480px"
+      >
+        <form onSubmit={handleSaveEditProduct}>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-prod-name">Product Name *</label>
+              <input
+                id="edit-prod-name"
+                type="text"
+                required
+                className="form-input"
+                placeholder="e.g. Organic Brown Rice 1kg"
+                value={editForm.name}
+                onChange={(e) => updateEditForm("name", e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-prod-category">Category</label>
+              <select
+                id="edit-prod-category"
+                className="form-select"
+                value={editForm.category}
+                onChange={(e) => updateEditForm("category", e.target.value)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-prod-price">Price (₹) *</label>
+              <input
+                id="edit-prod-price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                className="form-input"
+                placeholder="e.g. 150"
+                value={editForm.price}
+                onChange={(e) => updateEditForm("price", e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-prod-stock">Stock Quantity</label>
+              <input
+                id="edit-prod-stock"
+                type="number"
+                min="0"
+                className="form-input"
+                placeholder="e.g. 25"
+                value={editForm.stock}
+                onChange={(e) => updateEditForm("stock", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Edit Product Image Selection & Live Preview */}
+          <div className="form-group">
+            <div className="flex-between" style={{ marginBottom: "6px" }}>
+              <label className="form-label" style={{ margin: 0 }}>Product Image</label>
+              <div className="flex-center gap-1">
+                <button
+                  type="button"
+                  className={`btn btn-sm ${editImageInputMode === "file" ? "btn-primary" : "btn-ghost"}`}
+                  style={{ padding: "2px 8px", fontSize: "11px" }}
+                  onClick={() => setEditImageInputMode("file")}
+                >
+                  <UploadIcon size={11} />
+                  Upload from Device
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${editImageInputMode === "url" ? "btn-primary" : "btn-ghost"}`}
+                  style={{ padding: "2px 8px", fontSize: "11px" }}
+                  onClick={() => setEditImageInputMode("url")}
+                >
+                  <ImageIcon size={11} />
+                  Paste URL
+                </button>
+              </div>
+            </div>
+
+            {editImageInputMode === "file" ? (
+              <div style={{
+                border: "1px dashed var(--color-border)",
+                backgroundColor: "#f8fafc",
+                borderRadius: "var(--radius-sm)",
+                padding: "10px",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "6px"
+              }}>
+                <input
+                  id="edit-prod-file-upload"
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                  onChange={handleEditImageFileUpload}
+                  style={{ display: "none" }}
+                />
+                <label
+                  htmlFor="edit-prod-file-upload"
+                  className="btn btn-secondary btn-sm"
+                  style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <UploadIcon size={13} color="#2563eb" />
+                  <span>Choose Replacement Image</span>
+                </label>
+                <span className="text-muted text-xs" style={{ fontSize: "10px" }}>
+                  Supports PNG, JPG, JPEG, WEBP (Max 5MB)
+                </span>
+              </div>
+            ) : (
+              <input
+                id="edit-prod-image"
+                type="url"
+                className="form-input"
+                placeholder="https://images.unsplash.com/..."
+                value={editForm.imageUrl}
+                onChange={(e) => updateEditForm("imageUrl", e.target.value)}
+              />
+            )}
+
+            {/* Live Image Preview */}
+            {editForm.imageUrl && (
+              <div style={{
+                marginTop: "8px",
+                padding: "6px 10px",
+                backgroundColor: "#ffffff",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px"
+              }}>
+                <div className="flex-center gap-2">
+                  <img
+                    src={editForm.imageUrl}
+                    alt="Preview"
+                    style={{ width: "36px", height: "36px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--color-border)" }}
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                  <div>
+                    <span className="font-semibold text-xs text-success flex-center gap-1">
+                      <CheckIcon size={11} /> Current Image
+                    </span>
+                    <span className="text-muted text-xs" style={{ fontSize: "10px", display: "block" }}>
+                      {editForm.imageUrl.startsWith("data:") ? "Local File (Auto-Optimized)" : "Web URL Link"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm text-danger"
+                  style={{ padding: "2px 6px", fontSize: "11px" }}
+                  onClick={() => updateEditForm("imageUrl", "")}
+                >
+                  <TrashIcon size={12} />
+                  <span>Remove</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="edit-prod-desc">Description (Optional)</label>
+            <textarea
+              id="edit-prod-desc"
+              className="form-input form-textarea"
+              rows={2}
+              placeholder="Brief summary of the product..."
+              value={editForm.description}
+              onChange={(e) => updateEditForm("description", e.target.value)}
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={savingEditProduct}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={savingEditProduct}
+            >
+              {savingEditProduct ? "Saving Changes..." : "Update Product"}
             </button>
           </div>
         </form>

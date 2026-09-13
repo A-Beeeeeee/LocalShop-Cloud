@@ -80,6 +80,100 @@ router.get("/retailer", requireAuth, requireRole("retailer"), async (req, res) =
   }
 });
 
+// PUT /api/orders/:id/cancel  (customer cancels order)
+// body: { productId (optional), reason (optional) }
+router.put("/:id/cancel", requireAuth, requireRole("customer"), async (req, res) => {
+  try {
+    const { productId, reason } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (String(order.customer) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized access to order" });
+    }
+
+    let itemsToCancel = order.items;
+    if (productId) {
+      itemsToCancel = order.items.filter((i) => String(i.product) === String(productId));
+    }
+
+    if (itemsToCancel.length === 0) {
+      return res.status(400).json({ message: "No matching items found to cancel" });
+    }
+
+    let totalCancelledAmount = 0;
+
+    for (const item of itemsToCancel) {
+      if (item.status === "cancelled" || item.status === "refunded") {
+        continue;
+      }
+      
+      // If item was previously fulfilled, restore the inventory
+      if (item.status === "fulfilled" || item.status === "return_requested") {
+        const product = await Product.findById(item.product);
+        if (product) {
+          product.stock += item.qty;
+          await product.save();
+        }
+      }
+
+      item.status = "cancelled";
+      totalCancelledAmount += item.price * item.qty;
+    }
+
+    if (reason) {
+      order.cancellationReason = reason;
+    }
+
+    // If paid via Razorpay, record refund simulation
+    if (order.paymentMethod === "razorpay") {
+      order.refundStatus = "processed";
+      order.refundAmount = (order.refundAmount || 0) + totalCancelledAmount;
+    }
+
+    await order.save();
+    res.json({ message: "Order cancelled successfully", order });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// PUT /api/orders/:id/return-request  (customer requests return on fulfilled item)
+// body: { productId, reason }
+router.put("/:id/return-request", requireAuth, requireRole("customer"), async (req, res) => {
+  try {
+    const { productId, reason } = req.body;
+    if (!productId) {
+      return res.status(400).json({ message: "Product ID is required" });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (String(order.customer) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized access to order" });
+    }
+
+    const item = order.items.find((i) => String(i.product) === String(productId));
+    if (!item) return res.status(404).json({ message: "Item not found in this order" });
+
+    if (item.status !== "fulfilled") {
+      return res.status(400).json({ 
+        message: `Cannot request return for item with status "${item.status}". Only fulfilled items can be returned.` 
+      });
+    }
+
+    item.status = "return_requested";
+    item.returnReason = reason || "Customer requested return";
+    order.refundStatus = "pending";
+
+    await order.save();
+    res.json({ message: "Return request submitted successfully", order });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 // PUT /api/orders/:id/item-status  (retailer updates status of their item in an order)
 // body: { productId, status }
 router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req, res) => {
@@ -100,27 +194,29 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
     // Handle stock adjustments based on status changes
     if (previousStatus !== status) {
       if (status === "fulfilled") {
-        // Check if enough stock exists to fulfill
-        if (product.stock < item.qty) {
-          return res.status(400).json({ 
-            message: `Insufficient stock to fulfill. Available: ${product.stock}, Required: ${item.qty}` 
-          });
+        if (previousStatus === "refunded" || previousStatus === "cancelled" || previousStatus === "pending") {
+          // Reduce stock when transitioning to fulfilled
+          if (product.stock < item.qty) {
+            return res.status(400).json({ 
+              message: `Insufficient stock to fulfill. Available: ${product.stock}, Required: ${item.qty}` 
+            });
+          }
+          product.stock -= item.qty;
+          if (product.stock < 0) product.stock = 0;
+          await product.save();
         }
-        // Reduce stock when order is fulfilled (confirmed as sold)
-        product.stock -= item.qty;
-        // Safeguard: never allow negative stock
-        if (product.stock < 0) {
-          product.stock = 0;
-        }
-        await product.save();
-      } else if (status === "cancelled") {
-        // Restore stock when order is cancelled
-        if (previousStatus === "fulfilled") {
-          // If it was fulfilled, restore the quantity
+      } else if (status === "cancelled" || status === "refunded") {
+        // Restore stock when order is cancelled or refunded from fulfilled/return_requested
+        if (previousStatus === "fulfilled" || previousStatus === "return_requested") {
           product.stock += item.qty;
           await product.save();
         }
-        // If it was pending and now cancelled, no change (stock was never reduced)
+
+        // Process refund for the item if order was paid online
+        if (status === "refunded") {
+          order.refundStatus = "processed";
+          order.refundAmount = (order.refundAmount || 0) + (item.price * item.qty);
+        }
       }
     }
 
@@ -133,3 +229,4 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
 });
 
 module.exports = router;
+

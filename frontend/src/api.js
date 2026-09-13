@@ -45,6 +45,11 @@ export const api = {
   getRetailerOrders: () => request("/orders/retailer", { auth: true }),
   updateItemStatus: (orderId, payload) =>
     request(`/orders/${orderId}/item-status`, { method: "PUT", body: payload, auth: true }),
+  cancelOrder: (orderId, payload = {}) =>
+    request(`/orders/${orderId}/cancel`, { method: "PUT", body: payload, auth: true }),
+  requestReturn: (orderId, payload) =>
+    request(`/orders/${orderId}/return-request`, { method: "PUT", body: payload, auth: true }),
+
 
   getRetailerDashboard: () => request("/dashboard/retailer", { auth: true }),
 
