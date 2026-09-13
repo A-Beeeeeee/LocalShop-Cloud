@@ -4,6 +4,8 @@ import { api } from "../api";
 import { useToast } from "../context/ToastContext";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
+import OrderTrackingStepper from "../components/OrderTrackingStepper";
+import InvoiceModal from "../components/InvoiceModal";
 import { 
   BagIcon, 
   ClockIcon, 
@@ -13,7 +15,8 @@ import {
   CreditCardIcon,
   XIcon,
   CheckIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
+  ReceiptIcon
 } from "../components/Icons";
 
 const RETURN_REASONS = [
@@ -38,6 +41,10 @@ export default function CustomerOrders() {
   const [selectedReason, setSelectedReason] = useState(RETURN_REASONS[0]);
   const [additionalComments, setAdditionalComments] = useState("");
   const [submittingReturn, setSubmittingReturn] = useState(false);
+
+  // Invoice modal state
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -115,6 +122,11 @@ export default function CustomerOrders() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function handleViewInvoice(order) {
+    setSelectedInvoiceOrder(order);
+    setIsInvoiceModalOpen(true);
   }
 
   return (
@@ -211,6 +223,17 @@ export default function CustomerOrders() {
                   </div>
 
                   <div className="flex-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: "3px 8px", fontSize: "11px" }}
+                      onClick={() => handleViewInvoice(order)}
+                      title="View and print tax invoice"
+                    >
+                      <ReceiptIcon size={12} />
+                      <span>Invoice</span>
+                    </button>
+
                     <div className="order-total-badge">
                       <span className="order-total-label">Total</span>
                       <span className="order-total-val">₹{order.totalAmount}</span>
@@ -232,6 +255,9 @@ export default function CustomerOrders() {
                     )}
                   </div>
                 </div>
+
+                {/* Real-time Visual Order Tracking Stepper */}
+                <OrderTrackingStepper order={order} />
 
                 <div className="table-wrapper" style={{ marginTop: "6px" }}>
                   <table className="data-table">
@@ -387,6 +413,13 @@ export default function CustomerOrders() {
           </div>
         </form>
       </Modal>
+
+      {/* Official Tax Invoice Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        order={selectedInvoiceOrder}
+      />
     </div>
   );
 }

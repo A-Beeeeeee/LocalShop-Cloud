@@ -3,6 +3,7 @@ import { api } from "../api";
 import { useToast } from "../context/ToastContext";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
+import InvoiceModal from "../components/InvoiceModal";
 import { 
   TrendingUpIcon, 
   PackageIcon, 
@@ -17,7 +18,8 @@ import {
   SearchIcon, 
   PrinterIcon,
   UploadIcon,
-  ImageIcon
+  ImageIcon,
+  ReceiptIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -74,6 +76,10 @@ export default function RetailerDashboard() {
   });
   const [savingEditProduct, setSavingEditProduct] = useState(false);
 
+  // Invoice modal state
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+
   // Search & Filters in Products and Orders tabs
   const [productSearch, setProductSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -99,6 +105,26 @@ export default function RetailerDashboard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleViewOrderInvoice(row) {
+    const fullOrder = orders.find((o) => o._id === row.orderId);
+    if (fullOrder) {
+      setSelectedInvoiceOrder(fullOrder);
+    } else {
+      setSelectedInvoiceOrder({
+        _id: row.orderId,
+        createdAt: row.createdAt,
+        customer: { name: row.customerName, email: row.customerEmail },
+        address: row.address,
+        paymentMethod: row.paymentMethod,
+        paymentStatus: row.paymentStatus,
+        paymentId: row.paymentId,
+        items: [row.item],
+        totalAmount: row.item.price * row.item.qty,
+      });
+    }
+    setIsInvoiceModalOpen(true);
   }
 
   function updateForm(field, value) {
@@ -818,20 +844,31 @@ export default function RetailerDashboard() {
                           ₹{row.item.price * row.item.qty}
                         </td>
                         <td>
-                          <select
-                            value={row.item.status || "pending"}
-                            onChange={(e) =>
-                              handleStatusChange(row.orderId, row.item.product, e.target.value)
-                            }
-                            className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
-                            style={{ padding: "3px 6px", fontSize: "11px", width: "100%" }}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="fulfilled">Fulfilled</option>
-                            <option value="return_requested">Return Requested</option>
-                            <option value="refunded">Refunded (Approve Return)</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          <div className="flex-center gap-1">
+                            <select
+                              value={row.item.status || "pending"}
+                              onChange={(e) =>
+                                handleStatusChange(row.orderId, row.item.product, e.target.value)
+                              }
+                              className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
+                              style={{ padding: "3px 6px", fontSize: "11px", flex: 1 }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="fulfilled">Fulfilled</option>
+                              <option value="return_requested">Return Requested</option>
+                              <option value="refunded">Refunded (Approve Return)</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: "3px 6px", fontSize: "11px" }}
+                              onClick={() => handleViewOrderInvoice(row)}
+                              title="View and Print Tax Invoice"
+                            >
+                              <ReceiptIcon size={12} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1375,6 +1412,13 @@ export default function RetailerDashboard() {
           </div>
         </form>
       </Modal>
+
+      {/* Official Tax Invoice Modal for Retailers */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        order={selectedInvoiceOrder}
+      />
     </div>
   );
 }
