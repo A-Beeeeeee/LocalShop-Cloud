@@ -80,10 +80,6 @@ export default function Storefront() {
       {/* Hyperlocal Welcome Hero Banner */}
       <div className="storefront-hero">
         <div className="hero-content">
-          <div className="hero-badge">
-            <span className="hero-badge-dot" />
-            <span>Hyperlocal Cloud Network • Live</span>
-          </div>
           <h1 className="hero-title">
             Neighborhood stores, <span className="text-gradient">delivered in minutes.</span>
           </h1>
