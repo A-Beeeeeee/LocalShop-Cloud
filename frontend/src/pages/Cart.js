@@ -11,8 +11,13 @@ import {
   MapPinIcon, 
   ArrowRightIcon, 
   PackageIcon, 
-  CheckCircleIcon 
+  CheckCircleIcon,
+  CreditCardIcon,
+  SmartphoneIcon,
+  ShieldCheckIcon,
+  QrCodeIcon
 } from "../components/Icons";
+import Modal from "../components/Modal";
 
 export default function Cart() {
   const cart = useCart();
@@ -20,32 +25,71 @@ export default function Cart() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("razorpay"); // "razorpay" | "cod"
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
+  const [razorpayTab, setRazorpayTab] = useState("upi"); // "upi" | "card" | "netbanking"
+  const [upiId, setUpiId] = useState("customer@oksbi");
+  const [cardNumber, setCardNumber] = useState("4532 8712 9021 3456");
+  const [cardExpiry, setCardExpiry] = useState("08/28");
+  const [cardCvv, setCardCvv] = useState("789");
+  const [selectedBank, setSelectedBank] = useState("HDFC Bank");
+  const [processingPayment, setProcessingPayment] = useState(false);
+
   const navigate = useNavigate();
 
-  async function handlePlaceOrder() {
+  function handleStartCheckout() {
     setError("");
     if (cart.items.length === 0) {
       setError("Your cart is empty");
       return;
     }
     if (!address.trim()) {
-      setError("Please enter a valid delivery address");
+      setError("Please enter a valid delivery address before proceeding");
       return;
     }
+
+    if (paymentMethod === "razorpay") {
+      setIsRazorpayModalOpen(true);
+    } else {
+      executeOrderPlacement("cod", "pending", null);
+    }
+  }
+
+  async function executeOrderPlacement(method, status, paymentId) {
     setPlacing(true);
+    setError("");
     try {
       await api.placeOrder({
         items: cart.items.map((i) => ({ productId: i.productId, qty: i.qty })),
         address: address.trim(),
+        paymentMethod: method,
+        paymentStatus: status,
+        paymentId: paymentId || undefined,
       });
       cart.clearCart();
-      showToast("Order placed successfully! Track it in My Orders.", "success");
+      setIsRazorpayModalOpen(false);
+      showToast(
+        method === "razorpay" 
+          ? `Payment of ₹${cart.total} successful via Razorpay! Order placed.`
+          : "Order placed successfully via Cash on Delivery!", 
+        "success"
+      );
       setTimeout(() => navigate("/orders"), 600);
     } catch (err) {
       setError(err.message || "Failed to place order");
+      setIsRazorpayModalOpen(false);
     } finally {
       setPlacing(false);
+      setProcessingPayment(false);
     }
+  }
+
+  async function handleSimulatedRazorpayPayment() {
+    setProcessingPayment(true);
+    setTimeout(() => {
+      const generatedPayId = `pay_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      executeOrderPlacement("razorpay", "paid", generatedPayId);
+    }, 800);
   }
 
   if (cart.items.length === 0) {
@@ -95,9 +139,9 @@ export default function Cart() {
       )}
 
       <div className="checkout-layout">
-        {/* Left Column: Cart Items */}
+        {/* Left Column: Cart Items & Payment Method Selector */}
         <div className="checkout-items-col">
-          <div className="card">
+          <div className="card" style={{ marginBottom: "16px" }}>
             <div className="card-header flex-between">
               <h2 className="card-title">Cart Items ({cart.count})</h2>
               <span className="text-muted text-xs">Total items: {cart.count}</span>
@@ -154,6 +198,96 @@ export default function Cart() {
               ))}
             </div>
           </div>
+
+          {/* Payment Method Switcher Card */}
+          <div className="card">
+            <div className="card-header flex-between">
+              <h3 className="card-title">Select Payment Method</h3>
+              <span className="badge badge-success text-xs flex-center gap-1">
+                <ShieldCheckIcon size={12} />
+                SSL 256-Bit Encrypted
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "4px" }}>
+              {/* Razorpay Option */}
+              <div 
+                onClick={() => setPaymentMethod("razorpay")}
+                style={{
+                  border: `2px solid ${paymentMethod === "razorpay" ? "var(--color-primary)" : "var(--color-border)"}`,
+                  backgroundColor: paymentMethod === "razorpay" ? "var(--color-primary-subtle)" : "var(--color-surface)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px"
+                }}
+              >
+                <div className="flex-between">
+                  <div className="flex-center gap-2">
+                    <div style={{
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: "50%",
+                      border: `2px solid ${paymentMethod === "razorpay" ? "var(--color-primary)" : "#94a3b8"}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {paymentMethod === "razorpay" && (
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
+                      )}
+                    </div>
+                    <span className="font-semibold text-xs" style={{ color: "#0f172a" }}>Razorpay Online Gateway</span>
+                  </div>
+                  <span className="badge badge-primary text-xs" style={{ fontSize: "10px", padding: "1px 5px" }}>Recommended</span>
+                </div>
+                <p className="text-muted text-xs" style={{ margin: "2px 0 0 24px", lineHeight: "1.3" }}>
+                  UPI (GPay / PhonePe / Paytm), Debit/Credit Cards & NetBanking
+                </p>
+              </div>
+
+              {/* Cash On Delivery Option */}
+              <div 
+                onClick={() => setPaymentMethod("cod")}
+                style={{
+                  border: `2px solid ${paymentMethod === "cod" ? "var(--color-primary)" : "var(--color-border)"}`,
+                  backgroundColor: paymentMethod === "cod" ? "var(--color-primary-subtle)" : "var(--color-surface)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px"
+                }}
+              >
+                <div className="flex-between">
+                  <div className="flex-center gap-2">
+                    <div style={{
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: "50%",
+                      border: `2px solid ${paymentMethod === "cod" ? "var(--color-primary)" : "#94a3b8"}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}>
+                      {paymentMethod === "cod" && (
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
+                      )}
+                    </div>
+                    <span className="font-semibold text-xs" style={{ color: "#0f172a" }}>Cash on Delivery (COD)</span>
+                  </div>
+                </div>
+                <p className="text-muted text-xs" style={{ margin: "2px 0 0 24px", lineHeight: "1.3" }}>
+                  Pay cash directly to the local retailer upon item delivery
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Delivery Address & Summary (Sticky) */}
@@ -186,6 +320,12 @@ export default function Cart() {
               <span className="font-semibold">₹{cart.total}</span>
             </div>
             <div className="summary-row">
+              <span className="text-muted">Payment Mode</span>
+              <span className="font-semibold text-primary">
+                {paymentMethod === "razorpay" ? "Razorpay Gateway" : "Cash on Delivery"}
+              </span>
+            </div>
+            <div className="summary-row">
               <span className="text-muted">Delivery</span>
               <span className="text-success font-semibold">FREE</span>
             </div>
@@ -198,26 +338,235 @@ export default function Cart() {
             <button
               type="button"
               className="btn btn-primary btn-block"
-              style={{ marginTop: "12px", padding: "7px 12px" }}
-              onClick={handlePlaceOrder}
+              style={{ marginTop: "12px", padding: "8px 12px" }}
+              onClick={handleStartCheckout}
               disabled={placing}
             >
               {placing ? (
-                <span>Placing order...</span>
+                <span>Processing Order...</span>
+              ) : paymentMethod === "razorpay" ? (
+                <>
+                  <CreditCardIcon size={14} />
+                  <span>Pay with Razorpay (₹{cart.total})</span>
+                </>
               ) : (
                 <>
                   <CheckCircleIcon size={14} />
-                  <span>Place Order (₹{cart.total})</span>
+                  <span>Place COD Order (₹{cart.total})</span>
                 </>
               )}
             </button>
 
-            <p className="text-muted text-xs text-center" style={{ marginTop: "8px", fontSize: "0.7rem" }}>
-              Secure cloud transaction.
-            </p>
+            <div className="flex-center justify-center gap-2" style={{ marginTop: "10px" }}>
+              <ShieldCheckIcon size={12} color="#10b981" />
+              <p className="text-muted text-xs text-center" style={{ fontSize: "0.72rem", margin: 0 }}>
+                100% Secure Cloud Transactions
+              </p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* RAZORPAY CLOUD CHECKOUT MODAL */}
+      <Modal
+        isOpen={isRazorpayModalOpen}
+        onClose={() => !processingPayment && setIsRazorpayModalOpen(false)}
+        title="Razorpay Cloud Payment Gateway"
+        maxWidth="460px"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {/* Razorpay Brand Header */}
+          <div style={{
+            background: "linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)",
+            color: "#ffffff",
+            padding: "12px 16px",
+            borderRadius: "var(--radius-md)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <div>
+              <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.8 }}>
+                Merchant: LocalShop Cloud
+              </div>
+              <div style={{ fontSize: "18px", fontWeight: 700 }}>₹{cart.total}.00</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ 
+                backgroundColor: "rgba(255,255,255,0.2)", 
+                padding: "2px 8px", 
+                borderRadius: "12px", 
+                fontSize: "11px",
+                fontWeight: 600
+              }}>
+                Razorpay Live Sandbox
+              </span>
+            </div>
+          </div>
+
+          {/* Payment Method Tabs */}
+          <div style={{ display: "flex", gap: "6px", borderBottom: "1px solid var(--color-border)", paddingBottom: "6px" }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${razorpayTab === "upi" ? "btn-primary" : "btn-ghost"}`}
+              style={{ flex: 1, padding: "5px 8px", fontSize: "11px" }}
+              onClick={() => setRazorpayTab("upi")}
+            >
+              <SmartphoneIcon size={12} />
+              <span>UPI / QR</span>
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${razorpayTab === "card" ? "btn-primary" : "btn-ghost"}`}
+              style={{ flex: 1, padding: "5px 8px", fontSize: "11px" }}
+              onClick={() => setRazorpayTab("card")}
+            >
+              <CreditCardIcon size={12} />
+              <span>Card</span>
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${razorpayTab === "netbanking" ? "btn-primary" : "btn-ghost"}`}
+              style={{ flex: 1, padding: "5px 8px", fontSize: "11px" }}
+              onClick={() => setRazorpayTab("netbanking")}
+            >
+              <span>NetBanking</span>
+            </button>
+          </div>
+
+          {/* Tab 1: UPI */}
+          {razorpayTab === "upi" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ 
+                backgroundColor: "#f8fafc", 
+                padding: "10px", 
+                borderRadius: "var(--radius-sm)", 
+                border: "1px dashed var(--color-border)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px"
+              }}>
+                <div style={{
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <QrCodeIcon size={30} color="#2563eb" />
+                </div>
+                <div>
+                  <div className="font-semibold text-xs">Scan & Pay with Any UPI App</div>
+                  <div className="text-muted text-xs">Google Pay, PhonePe, Paytm, CRED UPI</div>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" htmlFor="upi-id" style={{ fontSize: "11px" }}>Or Enter Virtual Payment Address (VPA)</label>
+                <input
+                  id="upi-id"
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="e.g. mobile@upi or username@okaxis"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab 2: Credit / Debit Card */}
+          {razorpayTab === "card" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" htmlFor="card-num" style={{ fontSize: "11px" }}>Card Number</label>
+                <input
+                  id="card-num"
+                  type="text"
+                  className="form-input form-input-sm font-mono"
+                  placeholder="4532 8712 9021 3456"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" htmlFor="card-exp" style={{ fontSize: "11px" }}>Expiry (MM/YY)</label>
+                  <input
+                    id="card-exp"
+                    type="text"
+                    className="form-input form-input-sm font-mono"
+                    placeholder="MM/YY"
+                    value={cardExpiry}
+                    onChange={(e) => setCardExpiry(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" htmlFor="card-cvv" style={{ fontSize: "11px" }}>CVV</label>
+                  <input
+                    id="card-cvv"
+                    type="password"
+                    maxLength="4"
+                    className="form-input form-input-sm font-mono"
+                    placeholder="123"
+                    value={cardCvv}
+                    onChange={(e) => setCardCvv(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: NetBanking */}
+          {razorpayTab === "netbanking" && (
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="select-bank" style={{ fontSize: "11px" }}>Select Bank</label>
+              <select
+                id="select-bank"
+                className="form-select form-select-sm"
+                value={selectedBank}
+                onChange={(e) => setSelectedBank(e.target.value)}
+              >
+                <option value="HDFC Bank">HDFC Bank</option>
+                <option value="ICICI Bank">ICICI Bank</option>
+                <option value="State Bank of India">State Bank of India (SBI)</option>
+                <option value="Axis Bank">Axis Bank</option>
+                <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                <option value="Punjab National Bank">Punjab National Bank</option>
+              </select>
+            </div>
+          )}
+
+          {/* Security details & Pay button */}
+          <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: "10px", marginTop: "4px" }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              style={{ padding: "8px 12px", backgroundColor: "#0c2340", borderColor: "#0c2340" }}
+              onClick={handleSimulatedRazorpayPayment}
+              disabled={processingPayment}
+            >
+              {processingPayment ? (
+                <span className="flex-center justify-center gap-2">
+                  <span className="spin">⚙️</span>
+                  <span>Verifying & Authorizing ₹{cart.total}...</span>
+                </span>
+              ) : (
+                <span className="flex-center justify-center gap-2">
+                  <ShieldCheckIcon size={14} color="#10b981" />
+                  <span>Authorize & Pay ₹{cart.total}</span>
+                </span>
+              )}
+            </button>
+            <div className="text-muted text-xs text-center" style={{ fontSize: "0.68rem", marginTop: "6px" }}>
+              Powered by Razorpay Payments API • Cloud Sandbox Demo
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

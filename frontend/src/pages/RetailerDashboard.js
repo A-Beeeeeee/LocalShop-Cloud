@@ -20,6 +20,16 @@ import {
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
 
+const SAMPLE_PRESETS = [
+  { name: "Organic Brown Rice (1kg)", category: "Groceries", price: 120, stock: 40, imageUrl: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80" },
+  { name: "Fresh Organic Apples (1kg)", category: "Groceries", price: 180, stock: 25, imageUrl: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600&auto=format&fit=crop&q=80" },
+  { name: "Pure Cow Milk (1L)", category: "Groceries", price: 65, stock: 50, imageUrl: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=600&auto=format&fit=crop&q=80" },
+  { name: "Classic Cotton T-Shirt", category: "Apparel", price: 499, stock: 30, imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80" },
+  { name: "Wireless Bluetooth Headphones", category: "Electronics", price: 1999, stock: 15, imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80" },
+  { name: "Ceramic Artisan Coffee Mug", category: "Home", price: 299, stock: 20, imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80" },
+];
+
+
 export default function RetailerDashboard() {
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "products" | "orders" | "reports"
   const [stats, setStats] = useState(null);
@@ -179,6 +189,9 @@ export default function RetailerDashboard() {
             customerName: order.customer?.name || "Customer",
             customerEmail: order.customer?.email || "",
             address: order.address,
+            paymentMethod: order.paymentMethod,
+            paymentStatus: order.paymentStatus,
+            paymentId: order.paymentId,
             item,
           });
         }
@@ -598,6 +611,17 @@ export default function RetailerDashboard() {
                               {row.address}
                             </div>
                           )}
+                          <div style={{ marginTop: "2px" }}>
+                            {row.paymentMethod === "razorpay" ? (
+                              <span className="badge badge-success text-xs" style={{ fontSize: "10px", padding: "1px 4px" }} title={row.paymentId || "Online"}>
+                                Razorpay (Paid)
+                              </span>
+                            ) : (
+                              <span className="badge badge-warning text-xs" style={{ fontSize: "10px", padding: "1px 4px" }}>
+                                Cash on Delivery
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td>
                           <div className="font-medium text-xs">{row.item.name}</div>
@@ -715,6 +739,49 @@ export default function RetailerDashboard() {
         maxWidth="480px"
       >
         <form onSubmit={handleAddProduct}>
+          {/* Quick Preset Selector */}
+          <div style={{ 
+            backgroundColor: "#f1f5f9", 
+            padding: "8px 10px", 
+            borderRadius: "var(--radius-sm)", 
+            marginBottom: "10px",
+            border: "1px solid var(--color-border)"
+          }}>
+            <div className="flex-between" style={{ marginBottom: "4px" }}>
+              <span className="font-semibold text-xs text-muted" style={{ fontSize: "11px" }}>
+                Auto-Fill Sample Product & Image:
+              </span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+              {SAMPLE_PRESETS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{
+                    padding: "2px 6px",
+                    fontSize: "10px",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "4px"
+                  }}
+                  onClick={() => {
+                    setForm({
+                      name: preset.name,
+                      category: preset.category,
+                      price: preset.price,
+                      stock: preset.stock,
+                      imageUrl: preset.imageUrl,
+                      description: `Premium quality ${preset.name.toLowerCase()} sourced fresh for our local customers.`
+                    });
+                  }}
+                >
+                  + {preset.name.split(" ")[0]} ({preset.category})
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="prod-name">Product Name *</label>

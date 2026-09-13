@@ -1,8 +1,10 @@
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const rawUrl = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_URL = rawUrl.endsWith("/api") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api";
 
 function getToken() {
   return localStorage.getItem("token");
 }
+
 
 async function request(path, { method = "GET", body, auth = false } = {}) {
   const headers = { "Content-Type": "application/json" };

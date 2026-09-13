@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import StatusBadge from "../components/StatusBadge";
-import { BagIcon, ClockIcon, MapPinIcon, RefreshCwIcon, ArrowRightIcon } from "../components/Icons";
+import { 
+  BagIcon, 
+  ClockIcon, 
+  MapPinIcon, 
+  RefreshCwIcon, 
+  ArrowRightIcon,
+  CreditCardIcon,
+  ShieldCheckIcon
+} from "../components/Icons";
 
 export default function CustomerOrders() {
   const [orders, setOrders] = useState([]);
@@ -104,12 +112,26 @@ export default function CustomerOrders() {
                       <span title={order.address}>{order.address}</span>
                     </div>
                   )}
+                  {/* Payment Details Badge */}
+                  <div className="order-meta-item" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    <CreditCardIcon size={12} color="#2563eb" />
+                    <span style={{ fontWeight: 600, fontSize: "11px" }}>
+                      {order.paymentMethod === "razorpay" ? (
+                        <span className="text-success" title={order.paymentId ? `Transaction: ${order.paymentId}` : "Paid Online"}>
+                          Razorpay (Paid) {order.paymentId ? `• ${order.paymentId}` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted">Cash on Delivery</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <div className="order-total-badge">
                   <span className="order-total-label">Total</span>
                   <span className="order-total-val">₹{order.totalAmount}</span>
                 </div>
               </div>
+
 
               <div className="table-wrapper" style={{ marginTop: "6px" }}>
                 <table className="data-table">

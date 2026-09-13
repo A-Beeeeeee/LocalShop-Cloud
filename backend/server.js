@@ -16,7 +16,17 @@ app.use(express.json());
 
 connectDB();
 
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+app.get("/", (req, res) => res.json({ 
+  message: "LocalShop Cloud API is online", 
+  status: "ok", 
+  timestamp: new Date().toISOString() 
+}));
+
+app.get("/api/health", (req, res) => res.json({ 
+  status: "ok", 
+  service: "localshop-backend", 
+  timestamp: new Date().toISOString() 
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);

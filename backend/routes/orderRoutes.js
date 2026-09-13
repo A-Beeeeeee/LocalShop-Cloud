@@ -9,7 +9,7 @@ const router = express.Router();
 // body: { items: [{ productId, qty }], address }
 router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
   try {
-    const { items, address } = req.body;
+    const { items, address, paymentMethod, paymentStatus, paymentId } = req.body;
     if (!items || !items.length || !address) {
       return res.status(400).json({ message: "Items and address are required" });
     }
@@ -39,11 +39,17 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
       totalAmount += product.price * qty;
     }
 
+    const method = paymentMethod === "razorpay" ? "razorpay" : "cod";
+    const status = paymentStatus || (method === "razorpay" ? "paid" : "pending");
+
     const order = await Order.create({
       customer: req.user._id,
       items: orderItems,
       totalAmount,
       address,
+      paymentMethod: method,
+      paymentStatus: status,
+      paymentId: paymentId || undefined,
     });
 
     res.status(201).json(order);
