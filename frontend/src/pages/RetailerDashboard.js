@@ -15,7 +15,9 @@ import {
   CheckIcon, 
   XIcon, 
   SearchIcon, 
-  PrinterIcon 
+  PrinterIcon,
+  UploadIcon,
+  ImageIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -46,6 +48,7 @@ export default function RetailerDashboard() {
 
   // Add Product Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState("file"); // "file" | "url"
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -86,6 +89,52 @@ export default function RetailerDashboard() {
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
+
+  function handleImageFileUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select a valid image file (PNG, JPG, JPEG, WEBP)", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size must be under 5MB", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize on canvas to max 600px width/height for fast cloud storage
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        updateForm("imageUrl", optimizedDataUrl);
+        showToast("Image loaded and optimized from your device!", "success");
+      };
+      img.src = uploadEvent.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
 
   async function handleAddProduct(e) {
     e.preventDefault();
@@ -810,7 +859,7 @@ export default function RetailerDashboard() {
             </div>
           </div>
 
-          <div className="form-row-3">
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="prod-price">Price (₹) *</label>
               <input
@@ -837,17 +886,116 @@ export default function RetailerDashboard() {
                 onChange={(e) => updateForm("stock", e.target.value)}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="prod-image">Image URL</label>
+          </div>
+
+          {/* Product Image Selection & Live Preview */}
+          <div className="form-group">
+            <div className="flex-between" style={{ marginBottom: "6px" }}>
+              <label className="form-label" style={{ margin: 0 }}>Product Image</label>
+              <div className="flex-center gap-1">
+                <button
+                  type="button"
+                  className={`btn btn-sm ${imageInputMode === "file" ? "btn-primary" : "btn-ghost"}`}
+                  style={{ padding: "2px 8px", fontSize: "11px" }}
+                  onClick={() => setImageInputMode("file")}
+                >
+                  <UploadIcon size={11} />
+                  Upload from Device
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${imageInputMode === "url" ? "btn-primary" : "btn-ghost"}`}
+                  style={{ padding: "2px 8px", fontSize: "11px" }}
+                  onClick={() => setImageInputMode("url")}
+                >
+                  <ImageIcon size={11} />
+                  Paste URL
+                </button>
+              </div>
+            </div>
+
+            {imageInputMode === "file" ? (
+              <div style={{
+                border: "1px dashed var(--color-border)",
+                backgroundColor: "#f8fafc",
+                borderRadius: "var(--radius-sm)",
+                padding: "10px",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "6px"
+              }}>
+                <input
+                  id="prod-file-upload"
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                  onChange={handleImageFileUpload}
+                  style={{ display: "none" }}
+                />
+                <label
+                  htmlFor="prod-file-upload"
+                  className="btn btn-secondary btn-sm"
+                  style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <UploadIcon size={13} color="#2563eb" />
+                  <span>Choose Image from Computer</span>
+                </label>
+                <span className="text-muted text-xs" style={{ fontSize: "10px" }}>
+                  Supports PNG, JPG, JPEG, WEBP (Max 5MB)
+                </span>
+              </div>
+            ) : (
               <input
                 id="prod-image"
                 type="url"
                 className="form-input"
-                placeholder="https://..."
+                placeholder="https://images.unsplash.com/..."
                 value={form.imageUrl}
                 onChange={(e) => updateForm("imageUrl", e.target.value)}
               />
-            </div>
+            )}
+
+            {/* Live Image Preview */}
+            {form.imageUrl && (
+              <div style={{
+                marginTop: "8px",
+                padding: "6px 10px",
+                backgroundColor: "#ffffff",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px"
+              }}>
+                <div className="flex-center gap-2">
+                  <img
+                    src={form.imageUrl}
+                    alt="Preview"
+                    style={{ width: "36px", height: "36px", objectFit: "cover", borderRadius: "4px", border: "1px solid var(--color-border)" }}
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                  <div>
+                    <span className="font-semibold text-xs text-success flex-center gap-1">
+                      <CheckIcon size={11} /> Image Selected
+                    </span>
+                    <span className="text-muted text-xs" style={{ fontSize: "10px", display: "block" }}>
+                      {form.imageUrl.startsWith("data:") ? "Local File (Auto-Optimized)" : "Web URL Link"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm text-danger"
+                  style={{ padding: "2px 6px", fontSize: "11px" }}
+                  onClick={() => updateForm("imageUrl", "")}
+                >
+                  <TrashIcon size={12} />
+                  <span>Remove</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
