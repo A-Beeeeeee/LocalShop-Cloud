@@ -8,8 +8,7 @@ import {
   MapPinIcon, 
   RefreshCwIcon, 
   ArrowRightIcon,
-  CreditCardIcon,
-  ShieldCheckIcon
+  CreditCardIcon
 } from "../components/Icons";
 
 export default function CustomerOrders() {
