@@ -4,7 +4,6 @@ import {
   PrinterIcon, 
   StoreIcon, 
   CreditCardIcon, 
-  CheckCircleIcon, 
   ShieldCheckIcon,
   QrCodeIcon
 } from "./Icons";

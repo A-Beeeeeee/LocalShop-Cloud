@@ -15,7 +15,6 @@ import {
   CreditCardIcon,
   XIcon,
   CheckIcon,
-  AlertTriangleIcon,
   ReceiptIcon
 } from "../components/Icons";
 

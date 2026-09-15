@@ -11,19 +11,30 @@ import {
 
 /**
  * Visual Order Tracking Stepper
- * Renders real-time multi-stage status progression with responsive indicators.
+ * Renders real-time multi-stage status progression for multi-item and multi-vendor orders.
  */
 export default function OrderTrackingStepper({ order }) {
   if (!order || !order.items || order.items.length === 0) return null;
 
   const items = order.items;
-  const allCancelled = items.every((i) => i.status === "cancelled");
-  const anyReturnRequested = items.some((i) => i.status === "return_requested");
-  const allRefunded = items.some((i) => i.status === "refunded") || order.refundStatus === "processed";
-  const allFulfilled = items.every((i) => i.status === "fulfilled" || i.status === "refunded" || i.status === "return_requested");
-  const anyFulfilled = items.some((i) => i.status === "fulfilled");
+  const totalCount = items.length;
+  
+  const fulfilledItems = items.filter((i) => i.status === "fulfilled");
+  const pendingItems = items.filter((i) => i.status === "pending");
+  const cancelledItems = items.filter((i) => i.status === "cancelled");
+  const returnRequestedItems = items.filter((i) => i.status === "return_requested");
+  const refundedItems = items.filter((i) => i.status === "refunded");
 
-  // Determine flow type
+  const allCancelled = totalCount > 0 && items.every((i) => i.status === "cancelled");
+  const allRefundedOrReturned = totalCount > 0 && items.every((i) => i.status === "refunded" || i.status === "return_requested");
+  
+  // Active delivery items are those not cancelled or refunded
+  const activeItems = items.filter((i) => i.status === "pending" || i.status === "fulfilled");
+  const activeCount = activeItems.length;
+  const allActiveFulfilled = activeCount > 0 && activeItems.every((i) => i.status === "fulfilled");
+  const someActiveFulfilled = activeCount > 0 && fulfilledItems.length > 0;
+
+  // Case 1: Entire Order was Cancelled
   if (allCancelled) {
     const isOnlinePaid = order.paymentMethod === "razorpay";
     const cancelSteps = [
@@ -37,7 +48,7 @@ export default function OrderTrackingStepper({ order }) {
       {
         id: "cancelled",
         label: "Order Cancelled",
-        desc: order.cancellationReason || "Cancelled before fulfillment",
+        desc: order.cancellationReason || "Cancelled by customer / store",
         status: "cancelled",
         icon: <XIcon size={14} />,
       },
@@ -74,34 +85,36 @@ export default function OrderTrackingStepper({ order }) {
     );
   }
 
-  if (anyReturnRequested || allRefunded) {
+  // Case 2: Entire Order was Returned & Refunded
+  if (allRefundedOrReturned) {
+    const allRefundsProcessed = refundedItems.length === totalCount;
     const returnSteps = [
       {
         id: "delivered",
         label: "Delivered",
-        desc: "Item delivered to customer",
+        desc: "Items delivered to customer",
         status: "complete",
         icon: <CheckCircleIcon size={14} />,
       },
       {
         id: "return_req",
         label: "Return Requested",
-        desc: "Customer requested return & refund",
+        desc: "Return request submitted",
         status: "complete",
         icon: <RefreshCwIcon size={14} />,
       },
       {
         id: "review",
         label: "Retailer Review",
-        desc: allRefunded ? "Return approved & catalog restocked" : "Store reviewing request reason",
-        status: allRefunded ? "complete" : "current",
+        desc: allRefundsProcessed ? "Return approved & catalog restocked" : "Stores reviewing request reason",
+        status: allRefundsProcessed ? "complete" : "current",
         icon: <StoreIcon size={14} />,
       },
       {
         id: "refund_done",
         label: "Refund Complete",
-        desc: allRefunded ? `₹${order.refundAmount || order.totalAmount} refunded to customer` : "Awaiting store approval",
-        status: allRefunded ? "complete" : "upcoming",
+        desc: allRefundsProcessed ? `₹${order.refundAmount || order.totalAmount} refunded to customer` : "Awaiting store approval",
+        status: allRefundsProcessed ? "complete" : "upcoming",
         icon: <CheckCircleIcon size={14} />,
       },
     ];
@@ -111,7 +124,7 @@ export default function OrderTrackingStepper({ order }) {
         <div className="order-stepper-header">
           <span className="stepper-title">Return & Refund Progress</span>
           <span className="stepper-badge text-warning">
-            {allRefunded ? "Refund Completed" : "Return Under Review"}
+            {allRefundsProcessed ? "Refund Completed" : "Return Under Review"}
           </span>
         </div>
         <div className="order-stepper-track">
@@ -132,30 +145,38 @@ export default function OrderTrackingStepper({ order }) {
     );
   }
 
-  // Standard Hyperlocal Delivery Flow
-  const isFulfilled = allFulfilled;
-  const isProcessing = !allFulfilled && anyFulfilled;
+  // Case 3: Standard / Multi-Store Live Delivery Flow (Default)
+  const isFulfilled = allActiveFulfilled;
+  const isPartiallyFulfilled = someActiveFulfilled && !allActiveFulfilled;
 
   const steps = [
     {
       id: "placed",
       label: "Order Placed",
-      desc: "Received & verified by store",
+      desc: "Received & verified by stores",
       status: "complete",
       icon: <ClockIcon size={14} />,
     },
     {
       id: "processing",
       label: "Packing & Quality Check",
-      desc: isFulfilled || isProcessing ? "Items packed & ready for dispatch" : "Retailer packing items",
+      desc: isFulfilled 
+        ? `All ${activeCount} active items packed`
+        : isPartiallyFulfilled 
+        ? `${fulfilledItems.length} of ${activeCount} items packed & dispatched` 
+        : `Stores preparing ${activeCount} items`,
       status: isFulfilled ? "complete" : "current",
       icon: <PackageIcon size={14} />,
     },
     {
       id: "dispatch",
       label: "Out for Delivery",
-      desc: isFulfilled ? "Dispatched from local hub" : isProcessing ? "Driver assigned" : "Estimated within 2 hrs",
-      status: isFulfilled ? "complete" : isProcessing ? "current" : "upcoming",
+      desc: isFulfilled 
+        ? "All packages in transit / delivered" 
+        : isPartiallyFulfilled 
+        ? "Partial packages out for delivery" 
+        : "Estimated within 30-45 mins",
+      status: isFulfilled ? "complete" : isPartiallyFulfilled ? "current" : "upcoming",
       icon: <TruckIcon size={14} />,
     },
     {
@@ -171,8 +192,12 @@ export default function OrderTrackingStepper({ order }) {
     <div className="order-stepper-container">
       <div className="order-stepper-header">
         <span className="stepper-title">Live Delivery Progress</span>
-        <span className={`stepper-badge ${isFulfilled ? "text-success" : "text-primary"}`}>
-          {isFulfilled ? "Delivered" : "In Transit / Packing"}
+        <span className={`stepper-badge ${isFulfilled ? "text-success" : isPartiallyFulfilled ? "text-primary" : "text-warning"}`}>
+          {isFulfilled 
+            ? "Delivered (All items fulfilled)" 
+            : isPartiallyFulfilled 
+            ? `In Transit (${fulfilledItems.length} of ${activeCount} items fulfilled)` 
+            : `Order Placed (${pendingItems.length} items awaiting packing)`}
         </span>
       </div>
       <div className="order-stepper-track">
@@ -191,6 +216,28 @@ export default function OrderTrackingStepper({ order }) {
           </div>
         ))}
       </div>
+
+      {/* Item-level refund/cancel summary note for partial orders */}
+      {(refundedItems.length > 0 || returnRequestedItems.length > 0 || cancelledItems.length > 0) && (
+        <div style={{
+          marginTop: "8px",
+          padding: "4px 8px",
+          backgroundColor: "#f1f5f9",
+          border: "1px solid var(--color-border)",
+          borderRadius: "4px",
+          fontSize: "10.5px",
+          color: "var(--color-text-muted)",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px"
+        }}>
+          <span>
+            {refundedItems.length > 0 && `• ${refundedItems.length} item(s) refunded (₹${order.refundAmount || 0} processed)`}
+            {returnRequestedItems.length > 0 && ` • ${returnRequestedItems.length} item(s) under return review`}
+            {cancelledItems.length > 0 && ` • ${cancelledItems.length} item(s) cancelled`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
