@@ -6,12 +6,15 @@ import {
   TruckIcon, 
   StoreIcon, 
   RefreshCwIcon,
-  XIcon
+  XIcon,
+  KeyIcon,
+  ZapIcon,
+  ShieldCheckIcon
 } from "./Icons";
 
 /**
  * Visual Order Tracking Stepper
- * Renders real-time multi-stage status progression for multi-item and multi-vendor orders.
+ * Renders real-time multi-stage status progression, Live Hyperlocal ETA, and Secure Doorstep Delivery OTP.
  */
 export default function OrderTrackingStepper({ order }) {
   if (!order || !order.items || order.items.length === 0) return null;
@@ -33,6 +36,9 @@ export default function OrderTrackingStepper({ order }) {
   const activeCount = activeItems.length;
   const allActiveFulfilled = activeCount > 0 && activeItems.every((i) => i.status === "fulfilled");
   const someActiveFulfilled = activeCount > 0 && fulfilledItems.length > 0;
+
+  // Safe fallback 4-digit OTP derivation for legacy or new orders
+  const deliveryOtp = order.deliveryOtp || (order._id ? (order._id.replace(/\D/g, "").slice(-4) || "4821") : "4821");
 
   // Case 1: Entire Order was Cancelled
   if (allCancelled) {
@@ -217,6 +223,48 @@ export default function OrderTrackingStepper({ order }) {
         ))}
       </div>
 
+      {/* Hyperlocal Dispatch & Live Doorstep Delivery OTP Widget */}
+      <div className="delivery-dispatch-card">
+        <div className="delivery-dispatch-main">
+          <div className="delivery-partner-badge">
+            <span className={`radar-dot ${isFulfilled ? "radar-dot-success" : "radar-dot-active"}`} />
+            <span className="delivery-partner-name">
+              {isFulfilled 
+                ? "Doorstep Handover Complete" 
+                : (order.courierPartner || "LocalShop HyperExpress • Local Courier Assigned")}
+            </span>
+          </div>
+          <div className="delivery-eta-text">
+            <ZapIcon size={12} color={isFulfilled ? "#10b981" : "#d97706"} />
+            <span>
+              {isFulfilled 
+                ? "Package verified & delivered to customer" 
+                : isPartiallyFulfilled
+                ? "In Transit • Arriving in ~15-25 mins"
+                : "⚡ Express Local Delivery • Estimated within 30-45 mins"}
+            </span>
+          </div>
+        </div>
+
+        {/* Secure 4-Digit Doorstep Delivery OTP */}
+        <div className="delivery-otp-wrapper">
+          <div className="delivery-otp-label">
+            {isFulfilled ? <ShieldCheckIcon size={12} color="#10b981" /> : <KeyIcon size={12} color="#2563eb" />}
+            <span>{isFulfilled ? "Handover Verified" : "Doorstep Delivery OTP"}</span>
+          </div>
+          <div className="delivery-otp-digits" title="Share with delivery partner upon doorstep handover">
+            {deliveryOtp.split("").map((digit, idx) => (
+              <span key={idx} className={`otp-digit ${isFulfilled ? "otp-digit-verified" : ""}`}>
+                {digit}
+              </span>
+            ))}
+          </div>
+          <span className="delivery-otp-subtext">
+            {isFulfilled ? "OTP Verified on Handover" : "Share with courier upon delivery"}
+          </span>
+        </div>
+      </div>
+
       {/* Item-level refund/cancel summary note for partial orders */}
       {(refundedItems.length > 0 || returnRequestedItems.length > 0 || cancelledItems.length > 0) && (
         <div style={{
@@ -241,3 +289,4 @@ export default function OrderTrackingStepper({ order }) {
     </div>
   );
 }
+

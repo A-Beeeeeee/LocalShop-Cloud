@@ -41,6 +41,7 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
 
     const method = paymentMethod === "razorpay" ? "razorpay" : "cod";
     const status = paymentStatus || (method === "razorpay" ? "paid" : "pending");
+    const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
 
     const order = await Order.create({
       customer: req.user._id,
@@ -50,6 +51,9 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
       paymentMethod: method,
       paymentStatus: status,
       paymentId: paymentId || undefined,
+      deliveryOtp,
+      estimatedDeliveryMinutes: 30,
+      courierPartner: "LocalShop HyperExpress",
     });
 
     res.status(201).json(order);

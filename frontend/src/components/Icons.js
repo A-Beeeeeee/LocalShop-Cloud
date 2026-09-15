@@ -384,5 +384,23 @@ export function ReceiptIcon({ size = 18, className = "", color = "currentColor" 
   );
 }
 
+export function KeyIcon({ size = 16, className = "", color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7" />
+      <circle cx="7.5" cy="16.5" r="1.5" />
+    </svg>
+  );
+}
+
+export function ZapIcon({ size = 16, className = "", color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+
 
 

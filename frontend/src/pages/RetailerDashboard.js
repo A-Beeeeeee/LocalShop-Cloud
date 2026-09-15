@@ -19,7 +19,8 @@ import {
   PrinterIcon,
   UploadIcon,
   ImageIcon,
-  ReceiptIcon
+  ReceiptIcon,
+  KeyIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -377,6 +378,7 @@ export default function RetailerDashboard() {
             paymentMethod: order.paymentMethod,
             paymentStatus: order.paymentStatus,
             paymentId: order.paymentId,
+            deliveryOtp: order.deliveryOtp || (order._id ? (order._id.replace(/\D/g, "").slice(-4) || "4821") : "4821"),
             item,
           });
         }
@@ -810,7 +812,7 @@ export default function RetailerDashboard() {
                               {row.address}
                             </div>
                           )}
-                          <div style={{ marginTop: "2px" }}>
+                          <div style={{ marginTop: "3px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
                             {row.paymentMethod === "razorpay" ? (
                               <span className="badge badge-success text-xs" style={{ fontSize: "10px", padding: "1px 4px" }} title={row.paymentId || "Online"}>
                                 Razorpay (Paid)
@@ -820,6 +822,10 @@ export default function RetailerDashboard() {
                                 Cash on Delivery
                               </span>
                             )}
+                            <span className="badge badge-customer text-xs" style={{ fontSize: "10px", padding: "1px 5px", display: "inline-flex", alignItems: "center", gap: "3px" }} title="Customer Doorstep Delivery OTP">
+                              <KeyIcon size={10} color="#64748b" />
+                              OTP: <strong style={{ letterSpacing: "0.05em" }}>{row.deliveryOtp}</strong>
+                            </span>
                           </div>
                         </td>
                         <td>

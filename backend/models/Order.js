@@ -26,6 +26,9 @@ const orderSchema = new mongoose.Schema(
     refundStatus: { type: String, enum: ["none", "pending", "processed"], default: "none" },
     refundAmount: { type: Number, default: 0 },
     cancellationReason: { type: String, default: "" },
+    deliveryOtp: { type: String, default: "" },
+    estimatedDeliveryMinutes: { type: Number, default: 30 },
+    courierPartner: { type: String, default: "LocalShop HyperExpress" },
   },
   { timestamps: true }
 );
