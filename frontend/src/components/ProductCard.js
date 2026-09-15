@@ -1,13 +1,17 @@
 import React from "react";
-import { CartIcon, PackageIcon, StoreIcon } from "./Icons";
+import { CartIcon, PackageIcon, StoreIcon, EyeIcon } from "./Icons";
 
-export default function ProductCard({ product, onAdd }) {
+export default function ProductCard({ product, onAdd, onSelect }) {
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
   const shopName = product.retailer?.shopName || product.retailer?.name || "Local Retailer";
 
   return (
-    <div className="product-card">
+    <div 
+      className="product-card" 
+      onClick={() => onSelect && onSelect(product)}
+      style={{ cursor: onSelect ? "pointer" : "default" }}
+    >
       <div className="product-image-container">
         {product.imageUrl ? (
           <img 
@@ -48,6 +52,14 @@ export default function ProductCard({ product, onAdd }) {
             </span>
           )}
         </div>
+
+        {onSelect && (
+          <div className="product-hover-overlay">
+            <span className="product-quick-view-badge flex-center gap-1">
+              <EyeIcon size={12} /> Quick View
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="product-content">
@@ -75,7 +87,10 @@ export default function ProductCard({ product, onAdd }) {
             <button
               type="button"
               className={`btn btn-sm ${isOutOfStock ? "btn-disabled" : "btn-primary product-add-btn"}`}
-              onClick={() => onAdd(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(product);
+              }}
               disabled={isOutOfStock}
               title={isOutOfStock ? "Item is out of stock" : "Add to cart"}
             >

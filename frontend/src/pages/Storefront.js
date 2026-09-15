@@ -3,6 +3,7 @@ import { api } from "../api";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import ProductCard from "../components/ProductCard";
+import ProductDetailsModal from "../components/ProductDetailsModal";
 import { 
   SearchIcon, 
   XIcon, 
@@ -22,6 +23,7 @@ export default function Storefront() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const cart = useCart();
   const { showToast } = useToast();
 
@@ -223,10 +225,23 @@ export default function Storefront() {
       ) : (
         <div className="product-grid">
           {products.map((p) => (
-            <ProductCard key={p._id} product={p} onAdd={handleAdd} />
+            <ProductCard 
+              key={p._id} 
+              product={p} 
+              onAdd={handleAdd} 
+              onSelect={setSelectedProduct} 
+            />
           ))}
         </div>
       )}
+
+      {/* Customer Full Product Details Quick View Modal */}
+      <ProductDetailsModal
+        isOpen={Boolean(selectedProduct)}
+        onClose={() => setSelectedProduct(null)}
+        product={selectedProduct}
+        onAdd={handleAdd}
+      />
     </div>
   );
 }

@@ -74,7 +74,17 @@ router.get("/retailer", requireAuth, requireRole("retailer"), async (req, res) =
     const orders = await Order.find({ "items.retailer": req.user._id })
       .populate("customer", "name email")
       .sort({ createdAt: -1 });
-    res.json(orders);
+
+    // Filter items array on each order so the retailer only receives their own items
+    const filteredOrders = orders.map((order) => {
+      const orderObj = order.toObject();
+      orderObj.items = (orderObj.items || []).filter(
+        (i) => String(i.retailer) === String(req.user._id)
+      );
+      return orderObj;
+    });
+
+    res.json(filteredOrders);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -94,7 +104,9 @@ router.put("/:id/cancel", requireAuth, requireRole("customer"), async (req, res)
 
     let itemsToCancel = order.items;
     if (productId) {
-      itemsToCancel = order.items.filter((i) => String(i.product) === String(productId));
+      itemsToCancel = order.items.filter(
+        (i) => String(i.product) === String(productId) || String(i._id) === String(productId)
+      );
     }
 
     if (itemsToCancel.length === 0) {
@@ -154,7 +166,9 @@ router.put("/:id/return-request", requireAuth, requireRole("customer"), async (r
       return res.status(403).json({ message: "Unauthorized access to order" });
     }
 
-    const item = order.items.find((i) => String(i.product) === String(productId));
+    const item = order.items.find(
+      (i) => String(i.product) === String(productId) || String(i._id) === String(productId)
+    );
     if (!item) return res.status(404).json({ message: "Item not found in this order" });
 
     if (item.status !== "fulfilled") {
@@ -179,23 +193,30 @@ router.put("/:id/return-request", requireAuth, requireRole("customer"), async (r
 router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req, res) => {
   try {
     const { productId, status } = req.body;
+    if (!productId || !status) {
+      return res.status(400).json({ message: "productId and status are required" });
+    }
+
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    // Match item by product ID or item _id, AND retailer ID
     const item = order.items.find(
-      (i) => String(i.product) === String(productId) && String(i.retailer) === String(req.user._id)
+      (i) =>
+        (String(i.product) === String(productId) || String(i._id) === String(productId)) &&
+        String(i.retailer) === String(req.user._id)
     );
     if (!item) return res.status(403).json({ message: "Item not found for this retailer" });
 
     const previousStatus = item.status;
-    const product = await Product.findById(productId);
+    const product = await Product.findById(item.product);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // Handle stock adjustments based on status changes
+    // Handle stock adjustments and refunds based on status changes
     if (previousStatus !== status) {
       if (status === "fulfilled") {
-        if (previousStatus === "refunded" || previousStatus === "cancelled" || previousStatus === "pending") {
-          // Reduce stock when transitioning to fulfilled
+        if (previousStatus === "pending") {
+          // Reduce stock when transitioning from pending to fulfilled
           if (product.stock < item.qty) {
             return res.status(400).json({ 
               message: `Insufficient stock to fulfill. Available: ${product.stock}, Required: ${item.qty}` 
@@ -205,18 +226,23 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
           if (product.stock < 0) product.stock = 0;
           await product.save();
         }
-      } else if (status === "cancelled" || status === "refunded") {
-        // Restore stock when order is cancelled or refunded from fulfilled/return_requested
+      } else if (status === "cancelled") {
+        // Retailer declines pending order
         if (previousStatus === "fulfilled" || previousStatus === "return_requested") {
           product.stock += item.qty;
           await product.save();
         }
-
-        // Process refund for the item if order was paid online
-        if (status === "refunded") {
+        if (order.paymentMethod === "razorpay") {
           order.refundStatus = "processed";
           order.refundAmount = (order.refundAmount || 0) + (item.price * item.qty);
         }
+      } else if (status === "refunded") {
+        // Retailer approves customer return request
+        product.stock += item.qty;
+        await product.save();
+
+        order.refundStatus = "processed";
+        order.refundAmount = (order.refundAmount || 0) + (item.price * item.qty);
       }
     }
 

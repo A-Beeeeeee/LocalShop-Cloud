@@ -786,7 +786,7 @@ export default function RetailerDashboard() {
                       <th>Product</th>
                       <th style={{ textAlign: "center" }}>Qty</th>
                       <th style={{ textAlign: "right" }}>Total</th>
-                      <th style={{ width: "160px" }}>Fulfillment Action</th>
+                      <th style={{ minWidth: "180px" }}>Order Status & Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -835,7 +835,7 @@ export default function RetailerDashboard() {
                               fontSize: "10px",
                               color: "var(--color-warning-text)"
                             }}>
-                              <strong>Return:</strong> {row.item.returnReason}
+                              <strong>Return Reason:</strong> {row.item.returnReason}
                             </div>
                           )}
                         </td>
@@ -844,31 +844,130 @@ export default function RetailerDashboard() {
                           ₹{row.item.price * row.item.qty}
                         </td>
                         <td>
-                          <div className="flex-center gap-1">
-                            <select
-                              value={row.item.status || "pending"}
-                              onChange={(e) =>
-                                handleStatusChange(row.orderId, row.item.product, e.target.value)
-                              }
-                              className={`form-select form-select-sm status-select-${row.item.status || "pending"}`}
-                              style={{ padding: "3px 6px", fontSize: "11px", flex: 1 }}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="fulfilled">Fulfilled</option>
-                              <option value="return_requested">Return Requested</option>
-                              <option value="refunded">Refunded (Approve Return)</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: "3px 6px", fontSize: "11px" }}
-                              onClick={() => handleViewOrderInvoice(row)}
-                              title="View and Print Tax Invoice"
-                            >
-                              <ReceiptIcon size={12} />
-                            </button>
-                          </div>
+                          {row.item.status === "pending" && (
+                            <div className="flex-center gap-1 flex-wrap">
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                style={{ padding: "3px 8px", fontSize: "11px" }}
+                                onClick={() => handleStatusChange(row.orderId, row.item.product || row.item._id, "fulfilled")}
+                                title="Accept, pack, and mark fulfilled"
+                              >
+                                <CheckIcon size={12} />
+                                <span>Accept & Fulfill</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm text-danger"
+                                style={{ padding: "3px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
+                                onClick={() => {
+                                  if (window.confirm(`Decline item "${row.item.name}" (out of stock)? Customer will be notified and refunded.`)) {
+                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "cancelled");
+                                  }
+                                }}
+                                title="Decline / Out of stock"
+                              >
+                                <XIcon size={12} />
+                                <span>Decline</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: "3px 6px", fontSize: "11px" }}
+                                onClick={() => handleViewOrderInvoice(row)}
+                                title="View Tax Invoice"
+                              >
+                                <ReceiptIcon size={12} />
+                              </button>
+                            </div>
+                          )}
+
+                          {row.item.status === "return_requested" && (
+                            <div className="flex-center gap-1 flex-wrap">
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                style={{ padding: "3px 8px", fontSize: "11px", backgroundColor: "var(--color-success)", borderColor: "var(--color-success)" }}
+                                onClick={() => {
+                                  if (window.confirm(`Approve return for "${row.item.name}"? Catalog stock will be restored and refund will be issued.`)) {
+                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "refunded");
+                                  }
+                                }}
+                                title="Approve return, restock catalog, and process refund"
+                              >
+                                <CheckIcon size={12} />
+                                <span>Approve Return</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm text-danger"
+                                style={{ padding: "3px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
+                                onClick={() => {
+                                  if (window.confirm(`Decline return request and keep order marked as fulfilled?`)) {
+                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "fulfilled");
+                                  }
+                                }}
+                                title="Decline return request"
+                              >
+                                <XIcon size={12} />
+                                <span>Decline</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: "3px 6px", fontSize: "11px" }}
+                                onClick={() => handleViewOrderInvoice(row)}
+                                title="View Tax Invoice"
+                              >
+                                <ReceiptIcon size={12} />
+                              </button>
+                            </div>
+                          )}
+
+                          {row.item.status === "fulfilled" && (
+                            <div className="flex-center gap-1">
+                              <StatusBadge status="fulfilled" label="Fulfilled & Dispatched" size="sm" />
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: "3px 6px", fontSize: "11px" }}
+                                onClick={() => handleViewOrderInvoice(row)}
+                                title="View Tax Invoice"
+                              >
+                                <ReceiptIcon size={12} />
+                              </button>
+                            </div>
+                          )}
+
+                          {row.item.status === "refunded" && (
+                            <div className="flex-center gap-1">
+                              <StatusBadge status="refunded" label="Refunded & Restocked" size="sm" />
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: "3px 6px", fontSize: "11px" }}
+                                onClick={() => handleViewOrderInvoice(row)}
+                                title="View Tax Invoice"
+                              >
+                                <ReceiptIcon size={12} />
+                              </button>
+                            </div>
+                          )}
+
+                          {row.item.status === "cancelled" && (
+                            <div className="flex-center gap-1">
+                              <StatusBadge status="cancelled" label="Cancelled" size="sm" />
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: "3px 6px", fontSize: "11px" }}
+                                onClick={() => handleViewOrderInvoice(row)}
+                                title="View Tax Invoice"
+                              >
+                                <ReceiptIcon size={12} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
