@@ -4,18 +4,8 @@ import {
   HomeIcon, 
   BriefcaseIcon, 
   MapPinIcon, 
-  AlertCircleIcon, 
-  CheckIcon
+  AlertCircleIcon
 } from "./Icons";
-
-const LOCALITY_PRESETS = [
-  "Bascon Futura SV IT Park, Venkatanarayana Road, T Nagar, Chennai, Tamil Nadu, 600017",
-  "Anna Nagar West, 2nd Avenue, Near Roundtana, Chennai, Tamil Nadu, 600040",
-  "Adyar Signal, Gandhi Nagar 1st Main Rd, Chennai, Tamil Nadu, 600020",
-  "Velachery Main Road, Near Vijaya Nagar Bus Stand, Chennai, Tamil Nadu, 600042",
-  "OMR IT Expressway, Thoraipakkam, Chennai, Tamil Nadu, 600097",
-  "Shanthi Colony, 4th Main Road, Anna Nagar, Chennai, Tamil Nadu, 600040",
-];
 
 export default function AddressModal({ 
   isOpen, 
@@ -25,9 +15,7 @@ export default function AddressModal({
   userProfile = null 
 }) {
   const [flat, setFlat] = useState("");
-  const [area, setArea] = useState(LOCALITY_PRESETS[0]);
-  const [isChangingArea, setIsChangingArea] = useState(false);
-  const [customArea, setCustomArea] = useState("");
+  const [area, setArea] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [altPhone, setAltPhone] = useState("");
@@ -38,17 +26,16 @@ export default function AddressModal({
   useEffect(() => {
     if (isOpen) {
       setError("");
-      setIsChangingArea(false);
       if (initialData) {
         setFlat(initialData.flat || "");
-        setArea(initialData.area || LOCALITY_PRESETS[0]);
+        setArea(initialData.area || "");
         setFullName(initialData.fullName || userProfile?.name || "");
         setPhone(initialData.phone || userProfile?.phone || "");
         setAltPhone(initialData.altPhone || "");
         setAddressType(initialData.addressType || "Home");
       } else {
         setFlat("");
-        setArea(LOCALITY_PRESETS[0]);
+        setArea("");
         setFullName(userProfile?.name || "");
         setPhone(userProfile?.phone || "");
         setAltPhone("");
@@ -66,7 +53,7 @@ export default function AddressModal({
       return;
     }
     if (!area.trim()) {
-      setError("Please select or enter your Area / Locality.");
+      setError("Please enter your Area / Locality / Landmark.");
       return;
     }
     if (!fullName.trim()) {
@@ -97,19 +84,6 @@ export default function AddressModal({
     }
   }
 
-  function handleSelectPreset(preset) {
-    setArea(preset);
-    setIsChangingArea(false);
-  }
-
-  function handleApplyCustomArea() {
-    if (customArea.trim()) {
-      setArea(customArea.trim());
-      setCustomArea("");
-      setIsChangingArea(false);
-    }
-  }
-
   return (
     <Modal
       isOpen={isOpen}
@@ -117,7 +91,7 @@ export default function AddressModal({
       title="Deliver To"
       maxWidth="460px"
     >
-      {/* Accuracy Warning Banner */}
+      {/* Accuracy Notice Banner */}
       <div className="address-banner-box">
         <div className="address-banner-icon">
           <AlertCircleIcon size={16} color="#d97706" />
@@ -147,63 +121,17 @@ export default function AddressModal({
           />
         </div>
 
-        {/* Field 2: Area / Sector / Locality Container with [Change] button */}
-        <div className="locality-picker-card">
-          <div className="flex-between align-start">
-            <span className="locality-label">Area / Sector / Locality</span>
-            <button
-              type="button"
-              className="btn-change-locality"
-              onClick={() => setIsChangingArea(!isChangingArea)}
-            >
-              {isChangingArea ? "Cancel" : "Change"}
-            </button>
-          </div>
-          
-          <div className="locality-value-text">
-            {area}
-          </div>
-
-          {/* Expanded Locality Quick Chooser */}
-          {isChangingArea && (
-            <div className="locality-chooser-drawer">
-              <div className="text-muted text-xs" style={{ marginBottom: "6px", fontWeight: 600 }}>
-                Select popular hyperlocal hub:
-              </div>
-              <div className="locality-preset-list">
-                {LOCALITY_PRESETS.map((p, idx) => (
-                  <div
-                    key={idx}
-                    className={`locality-preset-item ${area === p ? "selected" : ""}`}
-                    onClick={() => handleSelectPreset(p)}
-                  >
-                    <MapPinIcon size={12} color={area === p ? "var(--color-primary)" : "#64748b"} />
-                    <span className="locality-preset-text">{p}</span>
-                    {area === p && <CheckIcon size={12} color="var(--color-primary)" />}
-                  </div>
-                ))}
-              </div>
-
-              {/* Custom Locality Input */}
-              <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
-                <input
-                  type="text"
-                  className="form-input form-input-sm"
-                  placeholder="Or enter custom area, landmark & pincode..."
-                  value={customArea}
-                  onChange={(e) => setCustomArea(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCustomArea())}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleApplyCustomArea}
-                >
-                  Set
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Field 2: Area / Sector / Locality */}
+        <div className="form-group deliver-to-floating" style={{ marginBottom: "10px" }}>
+          <label className="deliver-to-sublabel">Area / Sector / Locality *</label>
+          <input
+            type="text"
+            className="form-input deliver-to-input"
+            placeholder="Street, Locality, Area, City, Pincode"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            required
+          />
         </div>
 
         {/* Field 3: Full Name */}
@@ -212,7 +140,7 @@ export default function AddressModal({
           <input
             type="text"
             className="form-input deliver-to-input"
-            placeholder="e.g. Priya Dharshini"
+            placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
@@ -226,7 +154,7 @@ export default function AddressModal({
             type="tel"
             maxLength="10"
             className="form-input deliver-to-input"
-            placeholder="7550024142"
+            placeholder="Mobile Number"
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
             required
@@ -288,3 +216,4 @@ export default function AddressModal({
     </Modal>
   );
 }
+

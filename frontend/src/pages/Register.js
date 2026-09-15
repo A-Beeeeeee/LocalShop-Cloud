@@ -102,7 +102,7 @@ export default function Register() {
               type="text"
               required
               className="form-input"
-              placeholder="e.g. Alex Kumar"
+              placeholder="Enter your full name"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
             />
@@ -116,7 +116,7 @@ export default function Register() {
                 type="text"
                 required
                 className="form-input"
-                placeholder="e.g. Kumar Fresh Mart"
+                placeholder="Enter shop/business name"
                 value={form.shopName}
                 onChange={(e) => update("shopName", e.target.value)}
               />
@@ -131,7 +131,7 @@ export default function Register() {
               required
               autoComplete="email"
               className="form-input"
-              placeholder="alex@example.com"
+              placeholder="you@example.com"
               value={form.email}
               onChange={(e) => update("email", e.target.value)}
             />
@@ -159,7 +159,7 @@ export default function Register() {
                 maxLength="10"
                 required
                 className="form-input"
-                placeholder="9876543210"
+                placeholder="Enter 10-digit mobile number"
                 value={form.phone}
                 onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
               />
