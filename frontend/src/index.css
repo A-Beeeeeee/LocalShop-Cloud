@@ -2539,5 +2539,299 @@ a:hover { color: var(--color-primary-hover); }
   }
 }
 
+/* ==========================================================================
+   Quick-Commerce Deliver To Modal & Saved Addresses Styles
+   ========================================================================== */
+.address-banner-box {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.address-banner-icon {
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.address-banner-text {
+  font-size: 11.5px;
+  color: #92400e;
+  line-height: 1.35;
+  margin: 0;
+  font-weight: 500;
+}
+
+.deliver-to-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.deliver-to-input {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast);
+}
+
+.deliver-to-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.locality-picker-card {
+  background-color: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.locality-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.btn-change-locality {
+  background-color: #ffffff;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-change-locality:hover {
+  background-color: var(--color-primary-subtle);
+}
+
+.locality-value-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.locality-chooser-drawer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.locality-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.locality-preset-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+}
+
+.locality-preset-item:hover {
+  background-color: #f1f5f9;
+}
+
+.locality-preset-item.selected {
+  background-color: #eff6ff;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.locality-preset-text {
+  flex: 1;
+}
+
+.deliver-to-sublabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+
+.address-type-section {
+  margin: 4px 0 16px;
+}
+
+.address-type-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.address-type-chips {
+  display: flex;
+  gap: 8px;
+}
+
+.address-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: #ffffff;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.address-type-chip:hover {
+  border-color: var(--color-primary);
+}
+
+.address-type-chip.active {
+  background-color: #eff6ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.deliver-to-submit-btn {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+.deliver-to-submit-btn:hover:not(:disabled) {
+  background-color: #0369a1;
+  border-color: #0369a1;
+}
+
+/* Saved Address Cards in Checkout */
+.saved-addresses-stack {
+  margin: 6px 0;
+}
+
+.no-address-callout {
+  background-color: #f8fafc;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.no-address-text {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.address-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-address-card {
+  background-color: #ffffff;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.saved-address-card:hover {
+  border-color: #94a3b8;
+}
+
+.saved-address-card.selected {
+  border-color: var(--color-primary);
+  background-color: #eff6ff;
+}
+
+.saved-address-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.address-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.address-type-pill.home {
+  background-color: #ecfdf5;
+  color: #065f46;
+}
+
+.address-type-pill.work {
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+.saved-address-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.saved-address-body {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.saved-address-flat {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.saved-address-area {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.saved-address-phone {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+
 
 

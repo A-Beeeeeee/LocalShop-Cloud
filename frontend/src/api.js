@@ -29,6 +29,12 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
 export const api = {
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
+  getProfile: () => request("/auth/profile", { auth: true }),
+  updateProfile: (payload) => request("/auth/profile", { method: "PUT", body: payload, auth: true }),
+  getAddresses: () => request("/auth/addresses", { auth: true }),
+  addAddress: (payload) => request("/auth/addresses", { method: "POST", body: payload, auth: true }),
+  deleteAddress: (id) => request(`/auth/addresses/${id}`, { method: "DELETE", auth: true }),
+  setDefaultAddress: (id) => request(`/auth/addresses/${id}/default`, { method: "PUT", auth: true }),
 
   getProducts: (params = {}) => {
     const qs = new URLSearchParams(params).toString();

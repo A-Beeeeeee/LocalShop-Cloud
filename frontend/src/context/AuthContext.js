@@ -14,13 +14,19 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
+  function updateUser(userData) {
+    const updated = { ...(user || {}), ...userData };
+    localStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+  }
+
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, login, logout, updateUser }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

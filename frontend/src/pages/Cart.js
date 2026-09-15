@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { api } from "../api";
 import { 
@@ -15,13 +16,24 @@ import {
   CreditCardIcon,
   SmartphoneIcon,
   ShieldCheckIcon,
-  QrCodeIcon
+  QrCodeIcon,
+  HomeIcon,
+  BriefcaseIcon,
+  PhoneIcon
 } from "../components/Icons";
 import Modal from "../components/Modal";
+import AddressModal from "../components/AddressModal";
 
 export default function Cart() {
   const cart = useCart();
+  const { user, updateUser } = useAuth();
   const { showToast } = useToast();
+  
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -36,6 +48,74 @@ export default function Cart() {
   const [processingPayment, setProcessingPayment] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    loadSavedAddresses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadSavedAddresses() {
+    try {
+      setLoadingAddresses(true);
+      const addrs = await api.getAddresses();
+      setSavedAddresses(addrs || []);
+      if (addrs && addrs.length > 0) {
+        const defaultAddr = addrs.find((a) => a.isDefault) || addrs[0];
+        setSelectedAddressId(defaultAddr._id);
+        applyAddress(defaultAddr);
+      }
+    } catch (err) {
+      console.error("Failed to load addresses", err);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  }
+
+  function applyAddress(addr) {
+    if (!addr) return;
+    const formatted = `${addr.flat}, ${addr.area} (Deliver to: ${addr.fullName} • Ph: ${addr.phone}${addr.altPhone ? ` / ${addr.altPhone}` : ""})`;
+    setAddress(formatted);
+  }
+
+  function handleSelectAddress(addr) {
+    setSelectedAddressId(addr._id);
+    applyAddress(addr);
+  }
+
+  async function handleSaveNewAddress(addrData) {
+    const updatedAddresses = await api.addAddress(addrData);
+    setSavedAddresses(updatedAddresses || []);
+    if (updatedAddresses && updatedAddresses.length > 0) {
+      const newlyAdded = updatedAddresses[updatedAddresses.length - 1];
+      setSelectedAddressId(newlyAdded._id);
+      applyAddress(newlyAdded);
+    }
+    if (user && !user.phone) {
+      updateUser({ phone: addrData.phone });
+    }
+    showToast("Delivery address saved successfully!", "success");
+  }
+
+  async function handleDeleteAddress(e, addrId) {
+    e.stopPropagation();
+    if (!window.confirm("Delete this saved address?")) return;
+    try {
+      const updated = await api.deleteAddress(addrId);
+      setSavedAddresses(updated || []);
+      if (selectedAddressId === addrId) {
+        if (updated && updated.length > 0) {
+          setSelectedAddressId(updated[0]._id);
+          applyAddress(updated[0]);
+        } else {
+          setSelectedAddressId("");
+          setAddress("");
+        }
+      }
+      showToast("Address deleted", "info");
+    } catch (err) {
+      showToast(err.message || "Failed to delete address", "error");
+    }
+  }
 
   function handleStartCheckout() {
     setError("");
@@ -293,24 +373,94 @@ export default function Cart() {
         {/* Right Column: Delivery Address & Summary (Sticky) */}
         <div className="checkout-summary-col">
           <div className="card">
-            <div className="card-header">
+            <div className="card-header flex-between">
               <div className="flex-center gap-1">
                 <MapPinIcon size={14} color="#64748b" />
                 <h3 className="card-title">Delivery Address</h3>
               </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+                onClick={() => setIsAddressModalOpen(true)}
+              >
+                <PlusIcon size={11} />
+                <span>Add Address</span>
+              </button>
             </div>
-            <div className="form-group" style={{ marginBottom: "4px" }}>
-              <textarea
-                id="delivery-address"
-                className="form-input form-textarea"
-                placeholder="Flat / House No., Street, Area, City, Postal Code"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="text-muted text-xs text-right" style={{ marginBottom: "10px" }}>
-              {address.length} characters
+
+            {/* Saved Addresses List */}
+            <div className="saved-addresses-stack">
+              {loadingAddresses ? (
+                <div className="text-muted text-xs text-center" style={{ padding: "10px" }}>
+                  Loading addresses...
+                </div>
+              ) : savedAddresses.length === 0 ? (
+                <div className="no-address-callout">
+                  <p className="no-address-text">No address saved yet. Add your delivery address for 1-click checkout.</p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm btn-block"
+                    onClick={() => setIsAddressModalOpen(true)}
+                    style={{ marginTop: "6px" }}
+                  >
+                    <PlusIcon size={12} />
+                    <span>Deliver To: Add Address</span>
+                  </button>
+                  <div style={{ marginTop: "10px" }}>
+                    <label className="form-label" style={{ fontSize: "10.5px" }}>Or type address manually:</label>
+                    <textarea
+                      id="delivery-address"
+                      className="form-input form-textarea"
+                      placeholder="Flat / House No., Street, Area, City, Postal Code"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="address-cards-list">
+                  {savedAddresses.map((addr) => {
+                    const isSelected = selectedAddressId === addr._id;
+                    return (
+                      <div
+                        key={addr._id}
+                        className={`saved-address-card ${isSelected ? "selected" : ""}`}
+                        onClick={() => handleSelectAddress(addr)}
+                      >
+                        <div className="saved-address-top">
+                          <div className="flex-center gap-1">
+                            <span className={`address-type-pill ${addr.addressType?.toLowerCase()}`}>
+                              {addr.addressType === "Work" ? <BriefcaseIcon size={11} /> : <HomeIcon size={11} />}
+                              <span>{addr.addressType || "Home"}</span>
+                            </span>
+                            <span className="saved-address-name">{addr.fullName}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-icon text-muted hover-danger"
+                            onClick={(e) => handleDeleteAddress(e, addr._id)}
+                            title="Delete address"
+                            style={{ padding: "2px" }}
+                          >
+                            <TrashIcon size={11} />
+                          </button>
+                        </div>
+
+                        <div className="saved-address-body">
+                          <div className="saved-address-flat">{addr.flat}</div>
+                          <div className="saved-address-area">{addr.area}</div>
+                          <div className="saved-address-phone">
+                            <PhoneIcon size={10} color="#64748b" />
+                            <span>{addr.phone}{addr.altPhone ? ` • Alt: ${addr.altPhone}` : ""}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="summary-divider" />
@@ -567,6 +717,15 @@ export default function Cart() {
           </div>
         </div>
       </Modal>
+
+      {/* DELIVER TO / ADD NEW ADDRESS MODAL */}
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        onSaveAddress={handleSaveNewAddress}
+        userProfile={user}
+      />
     </div>
   );
 }
+

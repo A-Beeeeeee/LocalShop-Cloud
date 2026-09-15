@@ -4,7 +4,7 @@ import { api } from "../api";
 import { EyeIcon, EyeOffIcon, AlertCircleIcon, CheckCircleIcon, ArrowRightIcon, StoreIcon, UserIcon } from "../components/Icons";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "customer", shopName: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "customer", shopName: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -23,6 +23,11 @@ export default function Register() {
       setError("All fields are required.");
       return;
     }
+    const cleanPhone = form.phone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
     if (form.role === "retailer" && !form.shopName.trim()) {
       setError("Shop name is required for retailer accounts.");
       return;
@@ -32,6 +37,7 @@ export default function Register() {
       const data = await api.register({
         name: form.name.trim(),
         email: form.email.trim(),
+        phone: cleanPhone,
         password: form.password,
         role: form.role,
         shopName: form.role === "retailer" ? form.shopName.trim() : undefined,
@@ -129,6 +135,35 @@ export default function Register() {
               value={form.email}
               onChange={(e) => update("email", e.target.value)}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="reg-phone">10-Digit Mobile Number</label>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <span style={{
+                padding: "6px 10px",
+                backgroundColor: "var(--color-surface-subtle)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "var(--color-text-muted)",
+                display: "flex",
+                alignItems: "center"
+              }}>
+                +91
+              </span>
+              <input
+                id="reg-phone"
+                type="tel"
+                maxLength="10"
+                required
+                className="form-input"
+                placeholder="9876543210"
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+              />
+            </div>
           </div>
 
           <div className="form-group">
