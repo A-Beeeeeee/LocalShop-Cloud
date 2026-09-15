@@ -37,7 +37,10 @@ export default function Navbar() {
       <div className="navbar-container">
         <Link to="/" className="brand" onClick={closeMenu}>
           <span className="brand-mark">LS</span>
-          <span className="brand-text">LocalShop <span className="brand-cloud">Cloud</span></span>
+          <div className="brand-text-wrap">
+            <span className="brand-text">LocalShop <span className="brand-cloud">Cloud</span></span>
+            <span className="brand-tagline">Hyperlocal Delivery</span>
+          </div>
         </Link>
 
         {/* Desktop Navigation Links */}
