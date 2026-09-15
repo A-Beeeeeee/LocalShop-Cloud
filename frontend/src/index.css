@@ -4,38 +4,38 @@
    ========================================================================== */
 
 :root {
-  /* Slate & Sapphire Palette */
-  --color-bg: #f8fafc;
+  /* Hyperlocal Fresh Palette (Instamart / Blinkit / Emerald Theme) */
+  --color-bg: #f6fbf8;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f1f5f9;
-  --color-surface-hover: #e2e8f0;
-  --color-border: #e2e8f0;
-  --color-border-hover: #cbd5e1;
-  --color-border-focus: #94a3b8;
+  --color-surface-subtle: #edf7f1;
+  --color-surface-hover: #e0f2e7;
+  --color-border: #d4ebd9;
+  --color-border-hover: #b5e4c0;
+  --color-border-focus: #059669;
 
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-text-subtle: #94a3b8;
+  --color-text: #0b2318;
+  --color-text-muted: #3d6350;
+  --color-text-subtle: #6f9582;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-subtle: #eff6ff;
-  --color-primary-border: #bfdbfe;
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-subtle: #ecfdf5;
+  --color-primary-border: #a7f3d0;
 
   --color-success: #10b981;
   --color-success-bg: #ecfdf5;
   --color-success-border: #a7f3d0;
   --color-success-text: #065f46;
 
-  --color-warning: #f59e0b;
+  --color-warning: #d97706;
   --color-warning-bg: #fffbeb;
   --color-warning-border: #fde68a;
   --color-warning-text: #92400e;
 
-  --color-danger: #ef4444;
-  --color-danger-bg: #fef2f2;
-  --color-danger-border: #fecaca;
-  --color-danger-text: #991b1b;
+  --color-danger: #e11d48;
+  --color-danger-bg: #fff1f2;
+  --color-danger-border: #fecdd3;
+  --color-danger-text: #9f1239;
 
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -43,10 +43,10 @@
   --radius-lg: 12px;
   --radius-full: 9999px;
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xs: 0 1px 2px 0 rgba(5, 150, 105, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(5, 150, 105, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(5, 150, 105, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(5, 150, 105, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 
   --transition-fast: 120ms ease;
   --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -197,7 +197,7 @@ a:hover { color: var(--color-primary-hover); }
   width: 30px;
   height: 30px;
   border-radius: var(--radius-sm);
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -205,6 +205,7 @@ a:hover { color: var(--color-primary-hover); }
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
 }
 
 .brand-text {
@@ -2707,25 +2708,25 @@ a:hover { color: var(--color-primary-hover); }
 }
 
 .address-type-chip.active {
-  background-color: #eff6ff;
+  background-color: var(--color-primary-subtle);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
 .deliver-to-submit-btn {
-  background-color: #0284c7;
-  border-color: #0284c7;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 700;
   padding: 10px 16px;
   border-radius: var(--radius-sm);
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
 }
 
 .deliver-to-submit-btn:hover:not(:disabled) {
-  background-color: #0369a1;
-  border-color: #0369a1;
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
 /* Saved Address Cards in Checkout */
