@@ -65,9 +65,9 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
       isOpen={isOpen}
       onClose={onClose}
       title="Google Maps Live GPS Navigation"
-      maxWidth="720px"
+      maxWidth="780px"
     >
-      <div className="map-navigation-modal-content">
+      <div className="map-navigation-modal-content" style={{ width: "100%", minWidth: 0 }}>
         {/* Navigation Mode Switcher */}
         <div className="tab-bar" style={{ marginBottom: "12px" }}>
           <button
@@ -109,14 +109,15 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "8px"
+          gap: "10px",
+          minWidth: 0
         }}>
-          <div>
+          <div style={{ flex: "1 1 260px", minWidth: 0 }}>
             <div className="flex-center gap-1" style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase" }}>
               <CompassIcon size={13} />
               <span>{activeTitle}</span>
             </div>
-            <div className="font-semibold text-xs" style={{ marginTop: "2px", color: "var(--color-text)" }}>
+            <div className="font-semibold text-xs truncate" style={{ marginTop: "2px", color: "var(--color-text)" }} title={navTarget === "store" ? storeAddress : customerAddress}>
               {navTarget === "store" ? storeAddress : customerAddress}
             </div>
           </div>
@@ -131,7 +132,8 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
               alignItems: "center",
               gap: "6px",
               padding: "6px 14px",
-              boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)"
+              boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)",
+              flexShrink: 0
             }}
           >
             <NavigationIcon size={13} />
@@ -165,24 +167,29 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
         {/* Waypoint Details and Contact Shortcuts */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: "10px",
-          marginTop: "12px"
+          marginTop: "12px",
+          width: "100%"
         }}>
           {/* Store Point Box */}
           <div style={{
             backgroundColor: navTarget === "store" ? "var(--color-primary-subtle)" : "var(--color-surface-subtle)",
             border: navTarget === "store" ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
-            padding: "10px"
+            padding: "10px",
+            minWidth: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
           }}>
-            <div className="flex-between">
-              <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "#0284c7" }}>
-                <StoreIcon size={12} />
-                <span>Pickup: {storeName}</span>
+            <div className="flex-between gap-1">
+              <span className="text-xs font-bold uppercase flex-center gap-1 truncate" style={{ color: "#0284c7" }} title={`Pickup: ${storeName}`}>
+                <StoreIcon size={12} style={{ flexShrink: 0 }} />
+                <span className="truncate">Pickup: {storeName}</span>
               </span>
               {retailer?.phone && (
-                <a href={`tel:${retailer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10px" }}>
+                <a href={`tel:${retailer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10px", flexShrink: 0 }}>
                   <PhoneIcon size={10} /> Call Store
                 </a>
               )}
@@ -195,11 +202,11 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
                 href={storeMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold text-primary flex-center gap-1"
+                className="text-xs font-semibold text-primary flex-center gap-1 truncate"
                 style={{ textDecoration: "underline" }}
               >
-                <span>Navigate to Store in Google Maps</span>
-                <ExternalLinkIcon size={10} />
+                <span className="truncate">Navigate to Store in Google Maps</span>
+                <ExternalLinkIcon size={10} style={{ flexShrink: 0 }} />
               </a>
             </div>
           </div>
@@ -209,15 +216,19 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
             backgroundColor: navTarget === "customer" ? "var(--color-primary-subtle)" : "var(--color-surface-subtle)",
             border: navTarget === "customer" ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
-            padding: "10px"
+            padding: "10px",
+            minWidth: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
           }}>
-            <div className="flex-between">
-              <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "var(--color-primary)" }}>
-                <MapPinIcon size={12} />
-                <span>Dropoff: {customerName}</span>
+            <div className="flex-between gap-1">
+              <span className="text-xs font-bold uppercase flex-center gap-1 truncate" style={{ color: "var(--color-primary)" }} title={`Dropoff: ${customerName}`}>
+                <MapPinIcon size={12} style={{ flexShrink: 0 }} />
+                <span className="truncate">Dropoff: {customerName}</span>
               </span>
               {order.customer?.phone && (
-                <a href={`tel:${order.customer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10px" }}>
+                <a href={`tel:${order.customer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10px", flexShrink: 0 }}>
                   <PhoneIcon size={10} /> Call Customer
                 </a>
               )}
@@ -230,11 +241,11 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
                 href={customerMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold text-primary flex-center gap-1"
+                className="text-xs font-semibold text-primary flex-center gap-1 truncate"
                 style={{ textDecoration: "underline" }}
               >
-                <span>Navigate to Customer in Google Maps</span>
-                <ExternalLinkIcon size={10} />
+                <span className="truncate">Navigate to Customer in Google Maps</span>
+                <ExternalLinkIcon size={10} style={{ flexShrink: 0 }} />
               </a>
             </div>
           </div>

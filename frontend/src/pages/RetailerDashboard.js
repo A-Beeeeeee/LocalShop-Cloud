@@ -20,7 +20,6 @@ import {
   UploadIcon,
   ImageIcon,
   ReceiptIcon,
-  KeyIcon,
   BikeIcon,
   PhoneIcon
 } from "../components/Icons";
@@ -380,7 +379,6 @@ export default function RetailerDashboard() {
             paymentMethod: order.paymentMethod,
             paymentStatus: order.paymentStatus,
             paymentId: order.paymentId,
-            deliveryOtp: order.deliveryOtp || (order._id ? (order._id.replace(/\D/g, "").slice(-4) || "4821") : "4821"),
             deliveryPartner: order.deliveryPartner,
             deliveryStatus: order.deliveryStatus,
             item,
@@ -826,10 +824,6 @@ export default function RetailerDashboard() {
                                 Cash on Delivery
                               </span>
                             )}
-                            <span className="badge badge-customer text-xs" style={{ fontSize: "10px", padding: "1px 5px", display: "inline-flex", alignItems: "center", gap: "3px" }} title="Customer Doorstep Delivery OTP">
-                              <KeyIcon size={10} color="#64748b" />
-                              OTP: <strong style={{ letterSpacing: "0.05em" }}>{row.deliveryOtp}</strong>
-                            </span>
                           </div>
                           {row.deliveryPartner ? (
                             <div style={{ marginTop: "4px", fontSize: "10.5px", display: "flex", alignItems: "center", gap: "4px", color: "var(--color-primary)" }}>

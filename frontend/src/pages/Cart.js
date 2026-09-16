@@ -289,7 +289,7 @@ export default function Cart() {
               </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "4px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginTop: "4px" }}>
               {/* Razorpay Option */}
               <div 
                 onClick={() => setPaymentMethod("razorpay")}
@@ -311,7 +311,7 @@ export default function Cart() {
                       width: "16px",
                       height: "16px",
                       borderRadius: "50%",
-                      border: `2px solid ${paymentMethod === "razorpay" ? "var(--color-primary)" : "#94a3b8"}`,
+                      border: `2px solid ${paymentMethod === "razorpay" ? "var(--color-primary)" : "var(--color-border)"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center"
@@ -320,7 +320,7 @@ export default function Cart() {
                         <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
                       )}
                     </div>
-                    <span className="font-semibold text-xs" style={{ color: "#0f172a" }}>Razorpay Online Gateway</span>
+                    <span className="font-semibold text-xs" style={{ color: "var(--color-text)" }}>Razorpay Online Gateway</span>
                   </div>
                   <span className="badge badge-primary text-xs" style={{ fontSize: "10px", padding: "1px 5px" }}>Recommended</span>
                 </div>
@@ -350,7 +350,7 @@ export default function Cart() {
                       width: "16px",
                       height: "16px",
                       borderRadius: "50%",
-                      border: `2px solid ${paymentMethod === "cod" ? "var(--color-primary)" : "#94a3b8"}`,
+                      border: `2px solid ${paymentMethod === "cod" ? "var(--color-primary)" : "var(--color-border)"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center"
@@ -359,7 +359,7 @@ export default function Cart() {
                         <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
                       )}
                     </div>
-                    <span className="font-semibold text-xs" style={{ color: "#0f172a" }}>Cash on Delivery (COD)</span>
+                    <span className="font-semibold text-xs" style={{ color: "var(--color-text)" }}>Cash on Delivery (COD)</span>
                   </div>
                 </div>
                 <p className="text-muted text-xs" style={{ margin: "2px 0 0 24px", lineHeight: "1.3" }}>

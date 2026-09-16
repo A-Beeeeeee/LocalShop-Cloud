@@ -381,13 +381,15 @@ export default function DeliveryDashboard() {
                     </div>
 
                     {/* Step-by-Step Delivery Route Card */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", margin: "12px 0" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", margin: "12px 0", width: "100%" }}>
                       {/* Step A: Store Pickup Point */}
                       <div style={{
                         backgroundColor: "var(--color-surface-subtle)",
                         border: "1px solid var(--color-border)",
                         borderRadius: "var(--radius-sm)",
-                        padding: "10px 12px"
+                        padding: "10px 12px",
+                        minWidth: 0,
+                        overflow: "hidden"
                       }}>
                         <div className="flex-between" style={{ marginBottom: "6px" }}>
                           <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "#0284c7" }}>
@@ -398,13 +400,13 @@ export default function DeliveryDashboard() {
                             {isPickedUp ? "Picked Up" : "Awaiting Pickup"}
                           </span>
                         </div>
-                        <div className="font-semibold text-xs">
+                        <div className="font-semibold text-xs truncate">
                           {order.items?.[0]?.retailer?.shopName || order.items?.[0]?.retailer?.name || "Local Neighborhood Merchant"}
                         </div>
                         <div className="text-muted text-xs truncate" style={{ margin: "2px 0" }} title={getStoreAddress(order)}>
                           {getStoreAddress(order)}
                         </div>
-                        <div className="text-muted text-xs" style={{ margin: "2px 0 6px" }}>
+                        <div className="text-muted text-xs truncate" style={{ margin: "2px 0 6px" }}>
                           <strong>Items:</strong> {order.items?.length} item(s) • {order.items?.map(i => `${i.qty}x ${i.name}`).join(", ")}
                         </div>
 
@@ -448,7 +450,9 @@ export default function DeliveryDashboard() {
                         backgroundColor: "var(--color-surface-subtle)",
                         border: "1px solid var(--color-border)",
                         borderRadius: "var(--radius-sm)",
-                        padding: "10px 12px"
+                        padding: "10px 12px",
+                        minWidth: 0,
+                        overflow: "hidden"
                       }}>
                         <div className="flex-between" style={{ marginBottom: "6px" }}>
                           <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "var(--color-primary)" }}>
