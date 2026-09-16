@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api } from "../api";
-import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import ProductCard from "../components/ProductCard";
@@ -19,8 +17,6 @@ import {
 const CATEGORIES = ["All", "Groceries", "Apparel", "Home", "Electronics", "General"];
 
 export default function Storefront() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -30,12 +26,6 @@ export default function Storefront() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const cart = useCart();
   const { showToast } = useToast();
-
-  useEffect(() => {
-    if (user && user.role === "delivery") {
-      navigate("/delivery", { replace: true });
-    }
-  }, [user, navigate]);
 
   function handleAdd(product) {
     cart.addToCart(product);

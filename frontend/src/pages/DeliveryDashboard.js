@@ -25,6 +25,12 @@ import {
   ExternalLinkIcon,
   AlertTriangleIcon
 } from "../components/Icons";
+import {
+  extractRecipientInfo,
+  extractUniqueStores,
+  getStoreMapsUrl,
+  getCustomerMapsUrl
+} from "../utils/mapsHelper";
 
 export default function DeliveryDashboard() {
   const { user, updateUser } = useAuth();
@@ -165,16 +171,6 @@ export default function DeliveryDashboard() {
   function openMapModal(order, target = "customer") {
     setSelectedOrderForMap(order);
     setInitialMapTarget(target);
-  }
-
-  function getStoreAddress(order) {
-    const retailer = order?.items?.[0]?.retailer;
-    const storeName = retailer?.shopName || retailer?.name || "Local Retail Merchant";
-    if (retailer?.addresses && retailer.addresses.length > 0) {
-      const addr = retailer.addresses[0];
-      return `${addr.flat || ""}, ${addr.area || ""}, ${addr.city || "Chennai"} ${addr.pincode || ""}`.trim();
-    }
-    return `${storeName}, Local Merchant, Chennai`;
   }
 
   function formatDate(dateStr) {
@@ -380,142 +376,198 @@ export default function DeliveryDashboard() {
                       </div>
                     </div>
 
-                    {/* Step-by-Step Delivery Route Card */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", margin: "12px 0", width: "100%" }}>
-                      {/* Step A: Store Pickup Point */}
-                      <div style={{
-                        backgroundColor: "var(--color-surface-subtle)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "10px 12px",
-                        minWidth: 0,
-                        overflow: "hidden"
-                      }}>
-                        <div className="flex-between" style={{ marginBottom: "6px" }}>
-                          <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "#0284c7" }}>
-                            <StoreIcon size={13} />
-                            <span>1. Store Pickup Point</span>
-                          </span>
-                          <span className={`badge ${isPickedUp ? "badge-success" : "badge-warning"} text-xs`} style={{ fontSize: "10px" }}>
-                            {isPickedUp ? "Picked Up" : "Awaiting Pickup"}
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs truncate">
-                          {order.items?.[0]?.retailer?.shopName || order.items?.[0]?.retailer?.name || "Local Neighborhood Merchant"}
-                        </div>
-                        <div className="text-muted text-xs truncate" style={{ margin: "2px 0" }} title={getStoreAddress(order)}>
-                          {getStoreAddress(order)}
-                        </div>
-                        <div className="text-muted text-xs truncate" style={{ margin: "2px 0 6px" }}>
-                          <strong>Items:</strong> {order.items?.length} item(s) • {order.items?.map(i => `${i.qty}x ${i.name}`).join(", ")}
-                        </div>
+                    {/* Step-by-Step Delivery Route Cards */}
+                    {(() => {
+                      const stores = extractUniqueStores(order);
+                      const isMultiStore = stores.length > 1;
+                      const customerInfo = extractRecipientInfo(order.address, order.customer?.name || "Customer", order.customer?.phone || "");
 
-                        {/* Store Navigation and Call Controls */}
-                        <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px" }}>
-                          <div className="flex-center gap-1">
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(getStoreAddress(order))}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: "2px 7px", fontSize: "10.5px", color: "#0284c7" }}
-                              title="Open store location in Google Maps"
-                            >
-                              <NavigationIcon size={11} />
-                              <span>Google Maps</span>
-                              <ExternalLinkIcon size={9} />
-                            </a>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              style={{ padding: "2px 6px", fontSize: "10px" }}
-                              onClick={() => openMapModal(order, "store")}
-                              title="View in interactive map"
-                            >
-                              <CompassIcon size={11} />
-                              <span>In-App</span>
-                            </button>
+                      return (
+                        <>
+                          {isMultiStore && (
+                            <div style={{
+                              marginBottom: "8px",
+                              padding: "4px 10px",
+                              backgroundColor: "var(--color-primary-subtle)",
+                              border: "1px solid var(--color-primary-border)",
+                              borderRadius: "var(--radius-sm)",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "var(--color-primary)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}>
+                              <StoreIcon size={13} />
+                              <span>Multi-Stop Order: Pickup items from <strong>{stores.length} different local shops</strong> before final dropoff</span>
+                            </div>
+                          )}
+
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: stores.length > 1 ? "repeat(auto-fit, minmax(260px, 1fr))" : "repeat(auto-fit, minmax(280px, 1fr))",
+                            gap: "12px",
+                            margin: "10px 0",
+                            width: "100%"
+                          }}>
+                            {/* Store Pickup Points */}
+                            {stores.map((store, sIdx) => (
+                              <div
+                                key={store.id}
+                                style={{
+                                  backgroundColor: "var(--color-surface-subtle)",
+                                  border: "1px solid var(--color-border)",
+                                  borderRadius: "var(--radius-sm)",
+                                  padding: "10px 12px",
+                                  minWidth: 0,
+                                  overflow: "hidden",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  justifyContent: "space-between"
+                                }}
+                              >
+                                <div>
+                                  <div className="flex-between" style={{ marginBottom: "6px" }}>
+                                    <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "#0284c7" }}>
+                                      <StoreIcon size={13} />
+                                      <span>{isMultiStore ? `Stop ${sIdx + 1}: Store Pickup` : "1. Store Pickup Point"}</span>
+                                    </span>
+                                    <span className={`badge ${isPickedUp ? "badge-success" : "badge-warning"} text-xs`} style={{ fontSize: "10px" }}>
+                                      {isPickedUp ? "Picked Up" : "Awaiting Pickup"}
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-xs truncate" title={store.storeName}>
+                                    {store.storeName}
+                                  </div>
+                                  <div className="text-muted text-xs truncate" style={{ margin: "2px 0" }} title={store.cleanAddress}>
+                                    {store.cleanAddress}
+                                  </div>
+                                  <div className="text-muted text-xs truncate" style={{ margin: "2px 0 6px" }}>
+                                    <strong>Items ({store.items.length}):</strong> {store.items.map(i => `${i.qty}x ${i.name}`).join(", ")}
+                                  </div>
+                                </div>
+
+                                {/* Store Navigation and Call Controls */}
+                                <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px", marginTop: "6px" }}>
+                                  <div className="flex-center gap-1">
+                                    <a
+                                      href={getStoreMapsUrl(store.cleanAddress)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn btn-secondary btn-sm"
+                                      style={{ padding: "2px 7px", fontSize: "10.5px", color: "#0284c7" }}
+                                      title="Open store location in Google Maps"
+                                    >
+                                      <NavigationIcon size={11} />
+                                      <span>Google Maps</span>
+                                      <ExternalLinkIcon size={9} />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm"
+                                      style={{ padding: "2px 6px", fontSize: "10px" }}
+                                      onClick={() => openMapModal(order, `store_${sIdx}`)}
+                                      title="View in interactive map"
+                                    >
+                                      <CompassIcon size={11} />
+                                      <span>In-App</span>
+                                    </button>
+                                  </div>
+
+                                  {store.phone && (
+                                    <a href={`tel:${store.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "2px 7px", fontSize: "10.5px" }}>
+                                      <PhoneIcon size={10} /> Call Store
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Customer Dropoff Point */}
+                            <div style={{
+                              backgroundColor: "var(--color-surface-subtle)",
+                              border: "1px solid var(--color-border)",
+                              borderRadius: "var(--radius-sm)",
+                              padding: "10px 12px",
+                              minWidth: 0,
+                              overflow: "hidden",
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "space-between"
+                            }}>
+                              <div>
+                                <div className="flex-between" style={{ marginBottom: "6px" }}>
+                                  <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "var(--color-primary)" }}>
+                                    <MapPinIcon size={13} />
+                                    <span>{stores.length + 1}. Customer Dropoff Point</span>
+                                  </span>
+                                  <span className="badge badge-customer text-xs" style={{ fontSize: "10px" }}>
+                                    {isCOD ? "Collect Cash (COD)" : "Paid Online"}
+                                  </span>
+                                </div>
+                                <div className="font-semibold text-xs flex-between">
+                                  <span>{customerInfo.name}</span>
+                                  {customerInfo.phone && (
+                                    <a href={`tel:${customerInfo.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10.5px" }}>
+                                      <PhoneIcon size={10} /> Call Customer
+                                    </a>
+                                  )}
+                                </div>
+                                <div className="text-muted text-xs font-medium" style={{ margin: "4px 0" }} title={customerInfo.cleanAddress}>
+                                  <MapPinIcon size={11} style={{ display: "inline", marginRight: "3px" }} />
+                                  {customerInfo.cleanAddress}
+                                </div>
+                                {customerInfo.phone && (
+                                  <div className="text-muted text-xs" style={{ marginBottom: "4px", fontSize: "10.5px" }}>
+                                    <PhoneIcon size={10} style={{ display: "inline", marginRight: "3px" }} />
+                                    <span>{customerInfo.phone}</span>
+                                  </div>
+                                )}
+                                <div className="text-muted text-xs" style={{ marginBottom: "6px" }}>
+                                  {isCOD ? (
+                                    <span className="text-danger font-bold flex-center gap-1">
+                                      <AlertTriangleIcon size={11} color="#ef4444" /> Collect ₹{order.totalAmount} in Cash
+                                    </span>
+                                  ) : (
+                                    <span className="text-success font-semibold flex-center gap-1">
+                                      <CheckCircleIcon size={11} color="#10b981" /> Pre-paid via Razorpay (No cash)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Customer Navigation Controls */}
+                              <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px", marginTop: "6px" }}>
+                                <div className="flex-center gap-1">
+                                  <a
+                                    href={getCustomerMapsUrl(customerInfo.cleanAddress)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-primary btn-sm"
+                                    style={{ padding: "2px 7px", fontSize: "10.5px" }}
+                                    title="Open customer doorstep in Google Maps"
+                                  >
+                                    <NavigationIcon size={11} />
+                                    <span>Google Maps</span>
+                                    <ExternalLinkIcon size={9} />
+                                  </a>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    style={{ padding: "2px 6px", fontSize: "10px" }}
+                                    onClick={() => openMapModal(order, "customer")}
+                                    title="View in interactive map"
+                                  >
+                                    <CompassIcon size={11} />
+                                    <span>In-App</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-
-                          {order.items?.[0]?.retailer?.phone && (
-                            <a href={`tel:${order.items[0].retailer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "2px 7px", fontSize: "10.5px" }}>
-                              <PhoneIcon size={10} /> Call Store
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Step B: Customer Dropoff Point */}
-                      <div style={{
-                        backgroundColor: "var(--color-surface-subtle)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "10px 12px",
-                        minWidth: 0,
-                        overflow: "hidden"
-                      }}>
-                        <div className="flex-between" style={{ marginBottom: "6px" }}>
-                          <span className="text-xs font-bold uppercase flex-center gap-1" style={{ color: "var(--color-primary)" }}>
-                            <MapPinIcon size={13} />
-                            <span>2. Customer Dropoff Point</span>
-                          </span>
-                          <span className="badge badge-customer text-xs" style={{ fontSize: "10px" }}>
-                            {isCOD ? "Collect Cash (COD)" : "Paid Online"}
-                          </span>
-                        </div>
-                        <div className="font-semibold text-xs flex-between">
-                          <span>{order.customer?.name || "Customer"}</span>
-                          {order.customer?.phone && (
-                            <a href={`tel:${order.customer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "1px 6px", fontSize: "10.5px" }}>
-                              <PhoneIcon size={10} /> Call Customer
-                            </a>
-                          )}
-                        </div>
-                        <div className="text-muted text-xs font-medium" style={{ margin: "4px 0" }}>
-                          <MapPinIcon size={11} style={{ display: "inline", marginRight: "3px" }} />
-                          {order.address}
-                        </div>
-                        <div className="text-muted text-xs" style={{ marginBottom: "6px" }}>
-                          {isCOD ? (
-                            <span className="text-danger font-bold flex-center gap-1">
-                              <AlertTriangleIcon size={11} color="#ef4444" /> Collect ₹{order.totalAmount} in Cash
-                            </span>
-                          ) : (
-                            <span className="text-success font-semibold flex-center gap-1">
-                              <CheckCircleIcon size={11} color="#10b981" /> Pre-paid via Razorpay (No cash)
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Customer Navigation Controls */}
-                        <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px" }}>
-                          <div className="flex-center gap-1">
-                            <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-primary btn-sm"
-                              style={{ padding: "2px 7px", fontSize: "10.5px" }}
-                              title="Open customer doorstep in Google Maps"
-                            >
-                              <NavigationIcon size={11} />
-                              <span>Google Maps</span>
-                              <ExternalLinkIcon size={9} />
-                            </a>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              style={{ padding: "2px 6px", fontSize: "10px" }}
-                              onClick={() => openMapModal(order, "customer")}
-                              title="View in interactive map"
-                            >
-                              <CompassIcon size={11} />
-                              <span>In-App</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        </>
+                      );
+                    })()}
 
                     {/* Rider Action Controls */}
                     <div className="flex-between flex-wrap gap-2" style={{ borderTop: "1px solid var(--color-border)", paddingTop: "10px" }}>
@@ -626,27 +678,41 @@ export default function DeliveryDashboard() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", margin: "10px 0" }}>
-                    <div style={{ fontSize: "12px" }}>
-                      <div className="text-muted text-xs uppercase font-semibold">Store Pickup Point</div>
-                      <div className="font-semibold text-xs" style={{ marginTop: "2px" }}>
-                        {order.items?.[0]?.retailer?.shopName || order.items?.[0]?.retailer?.name || "Local Retail Partner"}
-                      </div>
-                      <div className="text-muted text-xs">
-                        {order.items?.length} item(s) • ₹{order.totalAmount} value
-                      </div>
-                    </div>
+                  {(() => {
+                    const stores = extractUniqueStores(order);
+                    const isMultiStore = stores.length > 1;
+                    const custInfo = extractRecipientInfo(order.address, order.customer?.name || "Customer", order.customer?.phone || "");
 
-                    <div style={{ fontSize: "12px" }}>
-                      <div className="text-muted text-xs uppercase font-semibold">Customer Delivery Point</div>
-                      <div className="font-semibold text-xs" style={{ marginTop: "2px" }}>
-                        {order.customer?.name || "Customer"}
+                    return (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", margin: "10px 0" }}>
+                        <div style={{ fontSize: "12px" }}>
+                          <div className="text-muted text-xs uppercase font-semibold flex-center gap-1">
+                            <StoreIcon size={11} />
+                            <span>{isMultiStore ? `Pickups (${stores.length} Stores)` : "Store Pickup Point"}</span>
+                          </div>
+                          <div className="font-semibold text-xs truncate" style={{ marginTop: "2px" }} title={stores.map(s => s.storeName).join(", ")}>
+                            {isMultiStore ? stores.map(s => s.storeName).join(", ") : (stores[0]?.storeName || "Local Retail Partner")}
+                          </div>
+                          <div className="text-muted text-xs">
+                            {order.items?.length} item(s) • ₹{order.totalAmount} value
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: "12px" }}>
+                          <div className="text-muted text-xs uppercase font-semibold flex-center gap-1">
+                            <MapPinIcon size={11} />
+                            <span>Customer Delivery Point</span>
+                          </div>
+                          <div className="font-semibold text-xs" style={{ marginTop: "2px" }}>
+                            {custInfo.name}
+                          </div>
+                          <div className="text-muted text-xs truncate" title={custInfo.cleanAddress}>
+                            {custInfo.cleanAddress}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-muted text-xs truncate" title={order.address}>
-                        {order.address}
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="flex-between flex-wrap gap-2" style={{ borderTop: "1px solid var(--color-border)", paddingTop: "10px" }}>
                     <div className="text-muted text-xs flex-center gap-2">
