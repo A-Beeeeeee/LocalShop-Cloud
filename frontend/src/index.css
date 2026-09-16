@@ -2848,6 +2848,8 @@ a:hover { color: var(--color-primary-hover); }
   background-color: var(--color-primary-subtle);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .deliver-to-submit-btn {
@@ -3087,6 +3089,13 @@ a:hover { color: var(--color-primary-hover); }
   background-color: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text);
+}
+
+[data-theme="dark"] .address-type-chip.active {
+  background-color: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  color: #34d399;
+  box-shadow: 0 0 0 1.5px rgba(16, 185, 129, 0.4);
 }
 
 [data-theme="dark"] .address-type-pill {
