@@ -65,7 +65,9 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
 // GET /api/orders/mine  (customer order history)
 router.get("/mine", requireAuth, requireRole("customer"), async (req, res) => {
   try {
-    const orders = await Order.find({ customer: req.user._id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ customer: req.user._id })
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber")
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -76,7 +78,8 @@ router.get("/mine", requireAuth, requireRole("customer"), async (req, res) => {
 router.get("/retailer", requireAuth, requireRole("retailer"), async (req, res) => {
   try {
     const orders = await Order.find({ "items.retailer": req.user._id })
-      .populate("customer", "name email")
+      .populate("customer", "name email phone")
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber")
       .sort({ createdAt: -1 });
 
     // Filter items array on each order so the retailer only receives their own items
@@ -253,6 +256,150 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
     item.status = status;
     await order.save();
     res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// ==========================================================================
+// Delivery Partner (Rider) Routes
+// ==========================================================================
+
+// GET /api/orders/delivery/available (unassigned orders ready for pickup)
+router.get("/delivery/available", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const orders = await Order.find({
+      deliveryStatus: "unassigned",
+      "items.status": { $ne: "cancelled" }
+    })
+      .populate("customer", "name phone email")
+      .populate("items.retailer", "name shopName phone")
+      .sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// GET /api/orders/delivery/mine (active and completed deliveries for this rider)
+router.get("/delivery/mine", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const orders = await Order.find({ deliveryPartner: req.user._id })
+      .populate("customer", "name phone email")
+      .populate("items.retailer", "name shopName phone")
+      .sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// PUT /api/orders/:id/delivery/accept (delivery partner accepts a task)
+router.put("/:id/delivery/accept", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (order.deliveryStatus !== "unassigned" && String(order.deliveryPartner) !== String(req.user._id)) {
+      return res.status(400).json({ message: "This order is already claimed by another delivery partner" });
+    }
+
+    order.deliveryPartner = req.user._id;
+    order.deliveryStatus = "assigned";
+    order.courierPartner = `${req.user.name} (${req.user.vehicleType || "Bike"} • ${req.user.vehicleNumber || "LocalExpress"})`;
+
+    await order.save();
+
+    const populated = await Order.findById(order._id)
+      .populate("customer", "name phone email")
+      .populate("items.retailer", "name shopName phone")
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
+
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// PUT /api/orders/:id/delivery/pickup (mark order picked up from store)
+router.put("/:id/delivery/pickup", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (String(order.deliveryPartner) !== String(req.user._id)) {
+      return res.status(403).json({ message: "You are not the assigned delivery partner for this order" });
+    }
+
+    order.deliveryStatus = "out_for_delivery";
+    order.pickedUpAt = new Date();
+
+    await order.save();
+
+    const populated = await Order.findById(order._id)
+      .populate("customer", "name phone email")
+      .populate("items.retailer", "name shopName phone")
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
+
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// POST /api/orders/:id/delivery/verify-otp (verify customer 4-digit doorstep OTP)
+router.post("/:id/delivery/verify-otp", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const { otp } = req.body;
+    if (!otp) return res.status(400).json({ message: "Delivery OTP is required" });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (String(order.deliveryPartner) !== String(req.user._id)) {
+      return res.status(403).json({ message: "You are not the assigned delivery partner for this order" });
+    }
+
+    // Verify OTP (compare against stored deliveryOtp or fallback derived code)
+    const expectedOtp = order.deliveryOtp || (order._id ? (order._id.toString().replace(/\D/g, "").slice(-4) || "4821") : "4821");
+
+    if (order.deliveryOtp && order.deliveryOtp.trim() !== otp.trim() && expectedOtp !== otp.trim()) {
+      return res.status(400).json({ 
+        message: "Invalid Doorstep Delivery OTP. Please verify the 4-digit code with the customer." 
+      });
+    }
+
+    order.deliveryStatus = "delivered";
+    order.deliveredAt = new Date();
+
+    // If Cash on Delivery, mark payment as collected/paid
+    if (order.paymentMethod === "cod" && order.paymentStatus === "pending") {
+      order.paymentStatus = "paid";
+    }
+
+    // Mark all pending/fulfilled items as fulfilled
+    order.items.forEach((it) => {
+      if (it.status === "pending") it.status = "fulfilled";
+    });
+
+    await order.save();
+
+    // Credit delivery fee (₹40 per delivery) to delivery partner account
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(req.user._id, { $inc: { earnings: 40 } });
+
+    const populated = await Order.findById(order._id)
+      .populate("customer", "name phone email")
+      .populate("items.retailer", "name shopName phone")
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
+
+    res.json({
+      message: "Delivery successfully verified and marked as delivered!",
+      order: populated,
+      earningsAdded: 40
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

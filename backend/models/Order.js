@@ -29,6 +29,15 @@ const orderSchema = new mongoose.Schema(
     deliveryOtp: { type: String, default: "" },
     estimatedDeliveryMinutes: { type: Number, default: 30 },
     courierPartner: { type: String, default: "LocalShop HyperExpress" },
+    deliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    deliveryStatus: { 
+      type: String, 
+      enum: ["unassigned", "assigned", "picked_up", "out_for_delivery", "delivered", "failed"], 
+      default: "unassigned" 
+    },
+    pickedUpAt: { type: Date },
+    deliveredAt: { type: Date },
+    deliveryNotes: { type: String, default: "" },
   },
   { timestamps: true }
 );

@@ -60,10 +60,23 @@ export const api = {
 
 
   getRetailerDashboard: () => request("/dashboard/retailer", { auth: true }),
+  getDeliveryDashboard: () => request("/dashboard/delivery", { auth: true }),
+  toggleDeliveryAvailability: (isAvailable) =>
+    request("/auth/delivery-availability", { method: "PUT", body: { isAvailable }, auth: true }),
+
+  getAvailableDeliveries: () => request("/orders/delivery/available", { auth: true }),
+  getMyDeliveries: () => request("/orders/delivery/mine", { auth: true }),
+  acceptDelivery: (orderId) =>
+    request(`/orders/${orderId}/delivery/accept`, { method: "PUT", auth: true }),
+  pickupDelivery: (orderId) =>
+    request(`/orders/${orderId}/delivery/pickup`, { method: "PUT", auth: true }),
+  verifyDeliveryOtp: (orderId, otp) =>
+    request(`/orders/${orderId}/delivery/verify-otp`, { method: "POST", body: { otp }, auth: true }),
 
   getPendingRetailers: () => request("/admin/retailers?status=pending", { auth: true }),
   getRetailers: (status = "all") => request(`/admin/retailers?status=${status}`, { auth: true }),
   approveRetailer: (id) => request(`/admin/retailers/${id}/approve`, { method: "PUT", auth: true }),
   rejectRetailer: (id) => request(`/admin/retailers/${id}`, { method: "DELETE", auth: true }),
+  getDeliveryPartners: () => request("/admin/delivery-partners", { auth: true }),
   getAdminStats: () => request("/admin/stats", { auth: true }),
 };

@@ -1,10 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api";
-import { EyeIcon, EyeOffIcon, AlertCircleIcon, CheckCircleIcon, ArrowRightIcon, StoreIcon, UserIcon } from "../components/Icons";
+import { EyeIcon, EyeOffIcon, AlertCircleIcon, CheckCircleIcon, ArrowRightIcon, StoreIcon, UserIcon, BikeIcon } from "../components/Icons";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "customer", shopName: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    email: "", 
+    phone: "", 
+    password: "", 
+    role: "customer", 
+    shopName: "",
+    vehicleType: "Bike",
+    vehicleNumber: ""
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -32,6 +41,10 @@ export default function Register() {
       setError("Shop name is required for retailer accounts.");
       return;
     }
+    if (form.role === "delivery" && !form.vehicleNumber.trim()) {
+      setError("Vehicle registration number is required for delivery partners.");
+      return;
+    }
     setLoading(true);
     try {
       const data = await api.register({
@@ -41,6 +54,8 @@ export default function Register() {
         password: form.password,
         role: form.role,
         shopName: form.role === "retailer" ? form.shopName.trim() : undefined,
+        vehicleType: form.role === "delivery" ? form.vehicleType : undefined,
+        vehicleNumber: form.role === "delivery" ? form.vehicleNumber.trim() : undefined,
       });
       setSuccess(data.message || "Account registered successfully! Redirecting to login...");
       setTimeout(() => navigate("/login"), 1200);
@@ -82,7 +97,7 @@ export default function Register() {
               className={`role-option-btn ${form.role === "customer" ? "active" : ""}`}
               onClick={() => update("role", "customer")}
             >
-              <UserIcon size={14} />
+              <UserIcon size={13} />
               <span>Customer</span>
             </button>
             <button
@@ -90,8 +105,16 @@ export default function Register() {
               className={`role-option-btn ${form.role === "retailer" ? "active" : ""}`}
               onClick={() => update("role", "retailer")}
             >
-              <StoreIcon size={14} />
+              <StoreIcon size={13} />
               <span>Retailer</span>
+            </button>
+            <button
+              type="button"
+              className={`role-option-btn ${form.role === "delivery" ? "active" : ""}`}
+              onClick={() => update("role", "delivery")}
+            >
+              <BikeIcon size={14} />
+              <span>Delivery</span>
             </button>
           </div>
 
@@ -120,6 +143,38 @@ export default function Register() {
                 value={form.shopName}
                 onChange={(e) => update("shopName", e.target.value)}
               />
+            </div>
+          )}
+
+          {form.role === "delivery" && (
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="reg-vehicle-type">Vehicle Type</label>
+                <select
+                  id="reg-vehicle-type"
+                  className="form-select"
+                  value={form.vehicleType}
+                  onChange={(e) => update("vehicleType", e.target.value)}
+                >
+                  <option value="Bike">Motorcycle / Bike</option>
+                  <option value="Scooter">Scooter</option>
+                  <option value="EV">Electric Vehicle (EV)</option>
+                  <option value="Bicycle">Bicycle</option>
+                  <option value="Van">Delivery Van</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="reg-vehicle-num">Vehicle Reg. No.</label>
+                <input
+                  id="reg-vehicle-num"
+                  type="text"
+                  required
+                  className="form-input font-mono uppercase"
+                  placeholder="e.g. TN-09-AB-1234"
+                  value={form.vehicleNumber}
+                  onChange={(e) => update("vehicleNumber", e.target.value.toUpperCase())}
+                />
+              </div>
             </div>
           )}
 

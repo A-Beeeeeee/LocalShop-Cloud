@@ -13,11 +13,11 @@ function signToken(user) {
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role, shopName, phone } = req.body;
+    const { name, email, password, role, shopName, phone, vehicleType, vehicleNumber } = req.body;
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
-    if (!["customer", "retailer"].includes(role)) {
+    if (!["customer", "retailer", "delivery"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
     const existing = await User.findOne({ email: email.toLowerCase() });
@@ -31,16 +31,28 @@ router.post("/register", async (req, res) => {
       role,
       phone: phone ? phone.trim() : "",
       shopName: role === "retailer" ? shopName : undefined,
+      vehicleType: role === "delivery" ? (vehicleType || "Bike") : undefined,
+      vehicleNumber: role === "delivery" ? (vehicleNumber || "").trim().toUpperCase() : undefined,
+      isAvailable: role === "delivery" ? true : undefined,
+      earnings: role === "delivery" ? 0 : undefined,
     });
 
     res.status(201).json({
-      message: role === "retailer" ? "Registered. Awaiting admin approval." : "Registered successfully.",
+      message: role === "retailer" 
+        ? "Registered. Awaiting admin approval." 
+        : role === "delivery"
+        ? "Delivery Partner registered successfully."
+        : "Registered successfully.",
       user: { 
         id: user._id, 
         name: user.name, 
         email: user.email, 
         role: user.role, 
         phone: user.phone,
+        vehicleType: user.vehicleType,
+        vehicleNumber: user.vehicleNumber,
+        isAvailable: user.isAvailable,
+        earnings: user.earnings,
         approved: user.approved,
         addresses: user.addresses || []
       },
@@ -74,6 +86,10 @@ router.post("/login", async (req, res) => {
         role: user.role,
         phone: user.phone || "",
         shopName: user.shopName,
+        vehicleType: user.vehicleType,
+        vehicleNumber: user.vehicleNumber,
+        isAvailable: user.isAvailable,
+        earnings: user.earnings || 0,
         approved: user.approved,
         addresses: user.addresses || [],
       },
@@ -214,6 +230,29 @@ router.put("/addresses/:addressId/default", requireAuth, async (req, res) => {
 
     await user.save();
     res.json(user.addresses);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// PUT /api/auth/delivery-availability (toggle online/offline status for delivery partner)
+router.put("/delivery-availability", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.isAvailable = req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : !user.isAvailable;
+    await user.save();
+
+    res.json({
+      id: user._id,
+      name: user.name,
+      role: user.role,
+      isAvailable: user.isAvailable,
+      vehicleType: user.vehicleType,
+      vehicleNumber: user.vehicleNumber,
+      earnings: user.earnings || 0,
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

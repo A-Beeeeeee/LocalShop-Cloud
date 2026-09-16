@@ -48,16 +48,27 @@ router.delete("/retailers/:id", async (req, res) => {
   }
 });
 
+// GET /api/admin/delivery-partners
+router.get("/delivery-partners", async (req, res) => {
+  try {
+    const partners = await User.find({ role: "delivery" }).select("-password").sort({ createdAt: -1 });
+    res.json(partners);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 // GET /api/admin/stats  (platform-wide analytics)
 router.get("/stats", async (req, res) => {
   try {
-    const [retailerCount, customerCount, productCount, orderCount] = await Promise.all([
+    const [retailerCount, customerCount, deliveryCount, productCount, orderCount] = await Promise.all([
       User.countDocuments({ role: "retailer", approved: true }),
       User.countDocuments({ role: "customer" }),
+      User.countDocuments({ role: "delivery" }),
       Product.countDocuments(),
       Order.countDocuments(),
     ]);
-    res.json({ retailerCount, customerCount, productCount, orderCount });
+    res.json({ retailerCount, customerCount, deliveryCount, productCount, orderCount });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

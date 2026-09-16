@@ -9,7 +9,9 @@ import {
   XIcon,
   KeyIcon,
   ZapIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  BikeIcon,
+  PhoneIcon
 } from "./Icons";
 
 /**
@@ -228,10 +230,19 @@ export default function OrderTrackingStepper({ order }) {
         <div className="delivery-dispatch-main">
           <div className="delivery-partner-badge">
             <span className={`radar-dot ${isFulfilled ? "radar-dot-success" : "radar-dot-active"}`} />
-            <span className="delivery-partner-name">
-              {isFulfilled 
-                ? "Doorstep Handover Complete" 
-                : (order.courierPartner || "LocalShop HyperExpress • Local Courier Assigned")}
+            <span className="delivery-partner-name flex-center gap-1">
+              {isFulfilled ? (
+                <span>Doorstep Handover Complete</span>
+              ) : order.deliveryPartner ? (
+                <>
+                  <BikeIcon size={13} />
+                  <span>
+                    Rider: <strong>{order.deliveryPartner.name}</strong> ({order.deliveryPartner.vehicleType || "Bike"} • {order.deliveryPartner.vehicleNumber || "Partner"})
+                  </span>
+                </>
+              ) : (
+                <span>{order.courierPartner || "LocalShop HyperExpress • Local Courier Assigned"}</span>
+              )}
             </span>
           </div>
           <div className="delivery-eta-text">
@@ -239,10 +250,23 @@ export default function OrderTrackingStepper({ order }) {
             <span>
               {isFulfilled 
                 ? "Package verified & delivered to customer" 
+                : order.deliveryPartner
+                ? (order.deliveryStatus === "out_for_delivery" 
+                    ? "Rider is en route to your address • Arriving soon" 
+                    : "Rider assigned • Heading to local store for pickup")
                 : isPartiallyFulfilled
                 ? "In Transit • Arriving in ~15-25 mins"
-                : "⚡ Express Local Delivery • Estimated within 30-45 mins"}
+                : "Express Local Delivery • Estimated within 30-45 mins"}
             </span>
+            {!isFulfilled && order.deliveryPartner?.phone && (
+              <a 
+                href={`tel:${order.deliveryPartner.phone}`} 
+                className="btn btn-secondary btn-sm"
+                style={{ marginLeft: "8px", padding: "1px 6px", fontSize: "10px", display: "inline-flex", alignItems: "center", gap: "3px" }}
+              >
+                <PhoneIcon size={10} /> Call Rider
+              </a>
+            )}
           </div>
         </div>
 

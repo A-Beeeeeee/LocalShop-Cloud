@@ -15,14 +15,23 @@ export default function StatusBadge({ status, label, size = "md" }) {
   } else if (["refunded"].includes(normalized)) {
     variant = "badge-retailer";
     if (!label) displayLabel = "Refunded";
-  } else if (["fulfilled", "approved", "in-stock", "in_stock", "active"].includes(normalized)) {
+  } else if (["fulfilled", "approved", "in-stock", "in_stock", "active", "delivered"].includes(normalized)) {
     variant = "badge-success";
     if (!label && normalized === "fulfilled") displayLabel = "Fulfilled";
     if (!label && normalized === "approved") displayLabel = "Approved";
-  } else if (["cancelled", "out-of-stock", "out_of_stock", "rejected"].includes(normalized)) {
+    if (!label && normalized === "delivered") displayLabel = "Delivered";
+  } else if (["assigned", "picked_up", "picked-up", "out_for_delivery", "out-for-delivery"].includes(normalized)) {
+    variant = "badge-retailer";
+    if (!label && (normalized === "out_for_delivery" || normalized === "out-for-delivery")) displayLabel = "Out for Delivery";
+    if (!label && (normalized === "picked_up" || normalized === "picked-up")) displayLabel = "Picked Up";
+    if (!label && normalized === "assigned") displayLabel = "Rider Assigned";
+  } else if (["unassigned"].includes(normalized)) {
+    variant = "badge-warning";
+    if (!label) displayLabel = "Ready for Pickup";
+  } else if (["cancelled", "out-of-stock", "out_of_stock", "rejected", "failed"].includes(normalized)) {
     variant = "badge-danger";
     if (!label && normalized === "cancelled") displayLabel = "Cancelled";
-  } else if (["customer", "retailer", "admin"].includes(normalized)) {
+  } else if (["customer", "retailer", "admin", "delivery"].includes(normalized)) {
     variant = `badge-${normalized}`;
   }
 

@@ -20,7 +20,9 @@ import {
   UploadIcon,
   ImageIcon,
   ReceiptIcon,
-  KeyIcon
+  KeyIcon,
+  BikeIcon,
+  PhoneIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -379,6 +381,8 @@ export default function RetailerDashboard() {
             paymentStatus: order.paymentStatus,
             paymentId: order.paymentId,
             deliveryOtp: order.deliveryOtp || (order._id ? (order._id.replace(/\D/g, "").slice(-4) || "4821") : "4821"),
+            deliveryPartner: order.deliveryPartner,
+            deliveryStatus: order.deliveryStatus,
             item,
           });
         }
@@ -827,6 +831,24 @@ export default function RetailerDashboard() {
                               OTP: <strong style={{ letterSpacing: "0.05em" }}>{row.deliveryOtp}</strong>
                             </span>
                           </div>
+                          {row.deliveryPartner ? (
+                            <div style={{ marginTop: "4px", fontSize: "10.5px", display: "flex", alignItems: "center", gap: "4px", color: "var(--color-primary)" }}>
+                              <BikeIcon size={11} />
+                              <span>
+                                <strong>{row.deliveryPartner.name}</strong> ({row.deliveryPartner.vehicleType || "Bike"}): <span className="badge badge-delivery text-xs" style={{ fontSize: "9px", padding: "1px 4px" }}>{row.deliveryStatus || "assigned"}</span>
+                              </span>
+                              {row.deliveryPartner.phone && (
+                                <a href={`tel:${row.deliveryPartner.phone}`} style={{ color: "var(--color-primary)", textDecoration: "underline", marginLeft: "2px" }} title="Call rider">
+                                  <PhoneIcon size={9} style={{ display: "inline" }} />
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: "4px", fontSize: "10px", color: "#64748b" }}>
+                              <BikeIcon size={10} style={{ display: "inline", marginRight: "3px" }} />
+                              <span>Open for rider claim</span>
+                            </div>
+                          )}
                         </td>
                         <td>
                           <div className="font-medium text-xs">{row.item.name}</div>

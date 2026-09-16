@@ -675,6 +675,12 @@ a:hover { color: var(--color-primary-hover); }
   border-color: #e9d5ff;
 }
 
+.badge-delivery {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
 .badge-default {
   background-color: var(--color-surface-subtle);
   color: var(--color-text-muted);
@@ -1535,7 +1541,7 @@ a:hover { color: var(--color-primary-hover); }
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   padding: 22px 24px;
   box-shadow: var(--shadow-sm);
 }
@@ -1569,9 +1575,9 @@ a:hover { color: var(--color-primary-hover); }
 
 .role-selector-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .role-option-btn {

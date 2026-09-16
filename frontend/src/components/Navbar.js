@@ -9,7 +9,8 @@ import {
   ShieldIcon, 
   LogoutIcon, 
   MenuIcon, 
-  XIcon 
+  XIcon,
+  BikeIcon
 } from "./Icons";
 import StatusBadge from "./StatusBadge";
 
@@ -94,6 +95,18 @@ export default function Navbar() {
               <Link to="/admin" className={`nav-item ${isActive("/admin") ? "nav-item-active" : ""}`}>
                 <ShieldIcon size={16} />
                 <span>Admin Console</span>
+              </Link>
+              <Link to="/" className={`nav-item ${isActive("/") ? "nav-item-active" : ""}`}>
+                <span>Storefront View</span>
+              </Link>
+            </>
+          )}
+
+          {user && user.role === "delivery" && (
+            <>
+              <Link to="/delivery" className={`nav-item ${isActive("/delivery") ? "nav-item-active" : ""}`}>
+                <BikeIcon size={16} />
+                <span>Delivery Tasks</span>
               </Link>
               <Link to="/" className={`nav-item ${isActive("/") ? "nav-item-active" : ""}`}>
                 <span>Storefront View</span>
@@ -194,6 +207,18 @@ export default function Navbar() {
                   <Link to="/admin" className={`mobile-nav-item ${isActive("/admin") ? "active" : ""}`} onClick={closeMenu}>
                     <ShieldIcon size={16} />
                     <span>Admin Console</span>
+                  </Link>
+                  <Link to="/" className={`mobile-nav-item ${isActive("/") ? "active" : ""}`} onClick={closeMenu}>
+                    <span>Storefront View</span>
+                  </Link>
+                </>
+              )}
+
+              {user.role === "delivery" && (
+                <>
+                  <Link to="/delivery" className={`mobile-nav-item ${isActive("/delivery") ? "active" : ""}`} onClick={closeMenu}>
+                    <BikeIcon size={16} />
+                    <span>Delivery Tasks</span>
                   </Link>
                   <Link to="/" className={`mobile-nav-item ${isActive("/") ? "active" : ""}`} onClick={closeMenu}>
                     <span>Storefront View</span>

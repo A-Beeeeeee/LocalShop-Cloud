@@ -427,6 +427,25 @@ export function PhoneIcon({ size = 16, className = "", color = "currentColor" })
   );
 }
 
+export function BikeIcon({ size = 18, className = "", color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="5.5" cy="17.5" r="3.5" />
+      <circle cx="18.5" cy="17.5" r="3.5" />
+      <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5L8 14l3.5-7 4 3 2.5-3" />
+      <path d="M12 17.5V14" />
+    </svg>
+  );
+}
+
+export function NavigationIcon({ size = 18, className = "", color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+    </svg>
+  );
+}
+
 
 
 

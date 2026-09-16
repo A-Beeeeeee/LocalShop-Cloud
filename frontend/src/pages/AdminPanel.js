@@ -6,21 +6,22 @@ import {
   ShieldIcon, 
   UserIcon, 
   StoreIcon, 
-  PackageIcon, 
   BagIcon, 
   CheckIcon, 
   XIcon, 
   RefreshCwIcon, 
   ServerIcon, 
   DatabaseIcon, 
-  CheckCircleIcon 
+  CheckCircleIcon,
+  BikeIcon 
 } from "../components/Icons";
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "approvals" | "retailers" | "system"
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "approvals" | "retailers" | "riders" | "system"
   const [stats, setStats] = useState(null);
   const [pending, setPending] = useState([]);
   const [allRetailers, setAllRetailers] = useState([]);
+  const [deliveryPartners, setDeliveryPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { showToast } = useToast();
@@ -33,14 +34,16 @@ export default function AdminPanel() {
     setLoading(true);
     setError("");
     try {
-      const [statsData, pendingData, retailersData] = await Promise.all([
+      const [statsData, pendingData, retailersData, deliveryData] = await Promise.all([
         api.getAdminStats(),
         api.getPendingRetailers(),
         api.getRetailers("all").catch(() => []),
+        api.getDeliveryPartners().catch(() => []),
       ]);
       setStats(statsData);
       setPending(Array.isArray(pendingData) ? pendingData : []);
       setAllRetailers(Array.isArray(retailersData) ? retailersData : []);
+      setDeliveryPartners(Array.isArray(deliveryData) ? deliveryData : []);
     } catch (err) {
       setError(err.message || "Failed to load admin data");
     } finally {
@@ -129,6 +132,16 @@ export default function AdminPanel() {
         <button
           type="button"
           role="tab"
+          aria-selected={activeTab === "riders"}
+          className={`tab-btn ${activeTab === "riders" ? "tab-btn-active" : ""}`}
+          onClick={() => setActiveTab("riders")}
+        >
+          <BikeIcon size={14} />
+          Delivery Fleet ({deliveryPartners.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
           aria-selected={activeTab === "system"}
           className={`tab-btn ${activeTab === "system" ? "tab-btn-active" : ""}`}
           onClick={() => setActiveTab("system")}
@@ -166,13 +179,13 @@ export default function AdminPanel() {
 
             <div className="stat-card">
               <div className="stat-card-header">
-                <span className="stat-label">Platform Products</span>
+                <span className="stat-label">Delivery Fleet</span>
                 <span className="stat-icon-wrap stat-icon-success">
-                  <PackageIcon size={14} />
+                  <BikeIcon size={14} />
                 </span>
               </div>
-              <p className="stat-value">{stats?.productCount ?? 0}</p>
-              <p className="stat-meta">Listed across all stores</p>
+              <p className="stat-value">{stats?.deliveryCount ?? deliveryPartners.length}</p>
+              <p className="stat-meta">Active delivery partners</p>
             </div>
 
             <div className="stat-card">
@@ -237,6 +250,13 @@ export default function AdminPanel() {
                     <td className="font-semibold">{stats?.customerCount ?? 0} Accounts</td>
                     <td>
                       <StatusBadge status="approved" label="Active" size="sm" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium">Delivery Fleet Partners</td>
+                    <td className="font-semibold">{stats?.deliveryCount ?? deliveryPartners.length} Riders</td>
+                    <td>
+                      <StatusBadge status="approved" label="Ready for Dispatch" size="sm" />
                     </td>
                   </tr>
                 </tbody>
@@ -384,7 +404,76 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* TAB 4: SYSTEM STATUS */}
+      {/* TAB 4: DELIVERY FLEET */}
+      {activeTab === "riders" && (
+        <div className="tab-content">
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">Registered Delivery Fleet & Riders</h3>
+              <p className="card-subtitle">Active hyperlocal delivery partners, vehicle details, and total verified earnings</p>
+            </div>
+
+            {deliveryPartners.length === 0 ? (
+              <div className="empty-state" style={{ padding: "28px 14px" }}>
+                <BikeIcon size={26} color="#94a3b8" />
+                <h3 className="empty-title" style={{ fontSize: "14px", marginTop: "8px" }}>
+                  No delivery partners registered yet
+                </h3>
+                <p className="empty-sub text-xs">
+                  New riders who register with the Delivery Partner role will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Rider Name</th>
+                      <th>Email & Phone</th>
+                      <th>Vehicle Details</th>
+                      <th>Availability</th>
+                      <th style={{ textAlign: "right" }}>Total Earnings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deliveryPartners.map((r) => (
+                      <tr key={r._id}>
+                        <td>
+                          <div className="font-semibold text-xs flex-center gap-1">
+                            <BikeIcon size={12} color="var(--color-primary)" />
+                            <span>{r.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="font-mono text-xs">{r.email}</div>
+                          {r.phone && <div className="text-muted text-xs">+91 {r.phone}</div>}
+                        </td>
+                        <td>
+                          <span className="badge badge-customer text-xs">
+                            {r.vehicleType || "Bike"} • {r.vehicleNumber || "N/A"}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge
+                            status={r.isAvailable ? "approved" : "pending"}
+                            label={r.isAvailable ? "Online (Active)" : "Offline (Paused)"}
+                            size="sm"
+                          />
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-primary)" }}>
+                          ₹{r.earnings || 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SYSTEM STATUS */}
       {activeTab === "system" && (
         <div className="tab-content">
           <div className="card">

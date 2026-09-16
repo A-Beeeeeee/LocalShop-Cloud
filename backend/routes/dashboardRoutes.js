@@ -18,12 +18,50 @@ router.get("/retailer", requireAuth, requireRole("retailer"), async (req, res) =
       order.items.forEach((item) => {
         if (String(item.retailer) === String(req.user._id)) {
           orderCount += 1;
-          salesTotal += item.price * item.qty;
+          // Only calculate revenue for fulfilled items
+          if (item.status === "fulfilled") {
+            salesTotal += item.price * item.qty;
+          }
         }
       });
     });
 
     res.json({ productCount, lowStockCount, orderCount, salesTotal });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// GET /api/dashboard/delivery (stats for logged-in delivery partner)
+router.get("/delivery", requireAuth, requireRole("delivery"), async (req, res) => {
+  try {
+    const User = require("../models/User");
+    const user = await User.findById(req.user._id);
+
+    const activeTasksCount = await Order.countDocuments({
+      deliveryPartner: req.user._id,
+      deliveryStatus: { $in: ["assigned", "picked_up", "out_for_delivery"] }
+    });
+
+    const completedDeliveriesCount = await Order.countDocuments({
+      deliveryPartner: req.user._id,
+      deliveryStatus: "delivered"
+    });
+
+    const availablePoolCount = await Order.countDocuments({
+      deliveryStatus: "unassigned",
+      "items.status": { $ne: "cancelled" }
+    });
+
+    res.json({
+      activeTasksCount,
+      completedDeliveriesCount,
+      availablePoolCount,
+      earnings: user?.earnings || 0,
+      isAvailable: user?.isAvailable ?? true,
+      vehicleType: user?.vehicleType || "Bike",
+      vehicleNumber: user?.vehicleNumber || "",
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
