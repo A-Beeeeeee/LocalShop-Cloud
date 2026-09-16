@@ -336,7 +336,7 @@ export default function CustomerOrders() {
         <form onSubmit={handleSubmitReturn}>
           {returnItem && (
             <div style={{
-              backgroundColor: "#f8fafc",
+              backgroundColor: "var(--color-surface-subtle)",
               padding: "8px 12px",
               borderRadius: "var(--radius-sm)",
               border: "1px solid var(--color-border)",

@@ -294,7 +294,7 @@ export default function OrderTrackingStepper({ order }) {
         <div style={{
           marginTop: "8px",
           padding: "4px 8px",
-          backgroundColor: "#f1f5f9",
+          backgroundColor: "var(--color-surface-subtle)",
           border: "1px solid var(--color-border)",
           borderRadius: "4px",
           fontSize: "10.5px",

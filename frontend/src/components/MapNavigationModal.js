@@ -100,8 +100,8 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
 
         {/* Dynamic Route Info Header */}
         <div style={{
-          backgroundColor: "#f0fdf4",
-          border: "1px solid #bbf7d0",
+          backgroundColor: "var(--color-primary-subtle)",
+          border: "1px solid var(--color-primary-border)",
           borderRadius: "var(--radius-sm)",
           padding: "10px 14px",
           marginBottom: "12px",
@@ -116,7 +116,7 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
               <CompassIcon size={13} />
               <span>{activeTitle}</span>
             </div>
-            <div className="font-semibold text-xs" style={{ marginTop: "2px", color: "#1e293b" }}>
+            <div className="font-semibold text-xs" style={{ marginTop: "2px", color: "var(--color-text)" }}>
               {navTarget === "store" ? storeAddress : customerAddress}
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
           borderRadius: "var(--radius-sm)",
           overflow: "hidden",
           border: "1px solid var(--color-border)",
-          backgroundColor: "#e2e8f0"
+          backgroundColor: "var(--color-surface-subtle)"
         }}>
           <iframe
             title="Google Maps Navigation View"
@@ -171,7 +171,7 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
         }}>
           {/* Store Point Box */}
           <div style={{
-            backgroundColor: navTarget === "store" ? "#f0fdf4" : "#f8fafc",
+            backgroundColor: navTarget === "store" ? "var(--color-primary-subtle)" : "var(--color-surface-subtle)",
             border: navTarget === "store" ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
             padding: "10px"
@@ -206,7 +206,7 @@ export default function MapNavigationModal({ isOpen, onClose, order, initialTarg
 
           {/* Customer Point Box */}
           <div style={{
-            backgroundColor: navTarget === "customer" ? "#f0fdf4" : "#f8fafc",
+            backgroundColor: navTarget === "customer" ? "var(--color-primary-subtle)" : "var(--color-surface-subtle)",
             border: navTarget === "customer" ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
             padding: "10px"

@@ -384,7 +384,7 @@ export default function DeliveryDashboard() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", margin: "12px 0" }}>
                       {/* Step A: Store Pickup Point */}
                       <div style={{
-                        backgroundColor: "#f8fafc",
+                        backgroundColor: "var(--color-surface-subtle)",
                         border: "1px solid var(--color-border)",
                         borderRadius: "var(--radius-sm)",
                         padding: "10px 12px"
@@ -445,7 +445,7 @@ export default function DeliveryDashboard() {
 
                       {/* Step B: Customer Dropoff Point */}
                       <div style={{
-                        backgroundColor: "#f8fafc",
+                        backgroundColor: "var(--color-surface-subtle)",
                         border: "1px solid var(--color-border)",
                         borderRadius: "var(--radius-sm)",
                         padding: "10px 12px"
@@ -797,13 +797,14 @@ export default function DeliveryDashboard() {
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <span className="badge badge-customer text-xs" style={{ color: "#065f46", backgroundColor: "#ecfdf5" }}>
+                <span className="badge badge-success text-xs font-mono">
                   #{selectedOrderForOtp?._id?.slice(-6).toUpperCase()}
                 </span>
               </div>
             </div>
-            <div style={{ fontSize: "11px", opacity: 0.9, marginTop: "4px" }}>
-              📍 {selectedOrderForOtp?.address}
+            <div style={{ fontSize: "11px", opacity: 0.9, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <MapPinIcon size={12} />
+              <span>{selectedOrderForOtp?.address}</span>
             </div>
           </div>
 

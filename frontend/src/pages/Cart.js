@@ -588,7 +588,7 @@ export default function Cart() {
           {razorpayTab === "upi" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ 
-                backgroundColor: "#f8fafc", 
+                backgroundColor: "var(--color-surface-subtle)", 
                 padding: "10px", 
                 borderRadius: "var(--radius-sm)", 
                 border: "1px dashed var(--color-border)",
@@ -599,7 +599,7 @@ export default function Cart() {
                 <div style={{
                   width: "48px",
                   height: "48px",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--color-surface)",
                   border: "1px solid var(--color-border)",
                   borderRadius: "6px",
                   display: "flex",

@@ -1093,7 +1093,7 @@ export default function RetailerDashboard() {
         <form onSubmit={handleAddProduct}>
           {/* Quick Preset Selector */}
           <div style={{ 
-            backgroundColor: "#f1f5f9", 
+            backgroundColor: "var(--color-surface-subtle)", 
             padding: "8px 10px", 
             borderRadius: "var(--radius-sm)", 
             marginBottom: "10px",
@@ -1113,7 +1113,7 @@ export default function RetailerDashboard() {
                   style={{
                     padding: "2px 6px",
                     fontSize: "10px",
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--color-surface)",
                     border: "1px solid var(--color-border)",
                     borderRadius: "4px"
                   }}
@@ -1220,7 +1220,7 @@ export default function RetailerDashboard() {
             {imageInputMode === "file" ? (
               <div style={{
                 border: "1px dashed var(--color-border)",
-                backgroundColor: "#f8fafc",
+                backgroundColor: "var(--color-surface-subtle)",
                 borderRadius: "var(--radius-sm)",
                 padding: "10px",
                 textAlign: "center",
@@ -1264,7 +1264,7 @@ export default function RetailerDashboard() {
               <div style={{
                 marginTop: "8px",
                 padding: "6px 10px",
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--color-surface)",
                 border: "1px solid var(--color-border)",
                 borderRadius: "var(--radius-sm)",
                 display: "flex",
@@ -1427,7 +1427,7 @@ export default function RetailerDashboard() {
             {editImageInputMode === "file" ? (
               <div style={{
                 border: "1px dashed var(--color-border)",
-                backgroundColor: "#f8fafc",
+                backgroundColor: "var(--color-surface-subtle)",
                 borderRadius: "var(--radius-sm)",
                 padding: "10px",
                 textAlign: "center",
@@ -1471,7 +1471,7 @@ export default function RetailerDashboard() {
               <div style={{
                 marginTop: "8px",
                 padding: "6px 10px",
-                backgroundColor: "#ffffff",
+                backgroundColor: "var(--color-surface)",
                 border: "1px solid var(--color-border)",
                 borderRadius: "var(--radius-sm)",
                 display: "flex",
