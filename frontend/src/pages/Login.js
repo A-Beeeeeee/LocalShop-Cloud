@@ -25,6 +25,7 @@ export default function Login() {
       const data = await api.login({ email, password });
       login(data.token, data.user);
       if (data.user.role === "retailer") navigate("/retailer");
+      else if (data.user.role === "delivery") navigate("/delivery");
       else if (data.user.role === "admin") navigate("/admin");
       else navigate("/");
     } catch (err) {

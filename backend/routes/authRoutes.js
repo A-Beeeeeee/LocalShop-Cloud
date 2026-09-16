@@ -41,7 +41,7 @@ router.post("/register", async (req, res) => {
       message: role === "retailer" 
         ? "Registered. Awaiting admin approval." 
         : role === "delivery"
-        ? "Delivery Partner registered successfully."
+        ? "Registered. Awaiting admin verification."
         : "Registered successfully.",
       user: { 
         id: user._id, 
@@ -74,6 +74,10 @@ router.post("/login", async (req, res) => {
 
     if (user.role === "retailer" && !user.approved) {
       return res.status(403).json({ message: "Your retailer account is pending admin approval" });
+    }
+
+    if (user.role === "delivery" && !user.approved) {
+      return res.status(403).json({ message: "Your delivery partner account is pending admin verification" });
     }
 
     const token = signToken(user);

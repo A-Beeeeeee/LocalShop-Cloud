@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
 import { 
   CartIcon, 
   BagIcon, 
@@ -10,12 +11,15 @@ import {
   LogoutIcon, 
   MenuIcon, 
   XIcon,
-  BikeIcon
+  BikeIcon,
+  SunIcon,
+  MoonIcon
 } from "./Icons";
 import StatusBadge from "./StatusBadge";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { toggleTheme, isDark } = useTheme();
   const cart = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -114,6 +118,17 @@ export default function Navbar() {
             </>
           )}
 
+          {/* Theme Toggle (Light / Dark) */}
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {isDark ? <SunIcon size={16} color="#fbbf24" /> : <MoonIcon size={16} color="#059669" />}
+          </button>
+
           {user && (
             <div className="nav-user-pill">
               <div className="nav-user-info">
@@ -161,6 +176,18 @@ export default function Navbar() {
               <Link to="/register" className="btn btn-primary btn-block" onClick={closeMenu}>
                 Register
               </Link>
+              <div className="mobile-theme-row flex-between" style={{ padding: "8px 0", borderTop: "1px solid var(--color-border)", marginTop: "8px" }}>
+                <span className="text-xs font-medium text-muted">Theme Mode</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm flex-center gap-1"
+                  style={{ padding: "4px 10px", fontSize: "11px" }}
+                  onClick={toggleTheme}
+                >
+                  {isDark ? <SunIcon size={14} color="#fbbf24" /> : <MoonIcon size={14} color="#059669" />}
+                  <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="mobile-menu-links">
@@ -226,7 +253,20 @@ export default function Navbar() {
                 </>
               )}
 
-              <button type="button" className="btn btn-secondary btn-block" onClick={handleLogout} style={{ marginTop: "12px" }}>
+              <div className="mobile-theme-row flex-between" style={{ padding: "8px 0", borderTop: "1px solid var(--color-border)", marginTop: "8px" }}>
+                <span className="text-xs font-medium text-muted">Theme Mode</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm flex-center gap-1"
+                  style={{ padding: "4px 10px", fontSize: "11px" }}
+                  onClick={toggleTheme}
+                >
+                  {isDark ? <SunIcon size={14} color="#fbbf24" /> : <MoonIcon size={14} color="#059669" />}
+                  <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
+                </button>
+              </div>
+
+              <button type="button" className="btn btn-secondary btn-block" onClick={handleLogout} style={{ marginTop: "8px" }}>
                 <LogoutIcon size={16} />
                 <span>Log out</span>
               </button>

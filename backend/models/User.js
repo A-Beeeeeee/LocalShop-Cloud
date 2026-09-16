@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
     vehicleNumber: { type: String, default: "" },
     isAvailable: { type: Boolean, default: true },
     earnings: { type: Number, default: 0 },
-    approved: { type: Boolean, default: function () { return this.role !== "retailer"; } },
+    approved: { type: Boolean, default: function () { return this.role !== "retailer" && this.role !== "delivery"; } },
     addresses: [addressSchema],
   },
   { timestamps: true }

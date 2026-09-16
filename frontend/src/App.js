@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./context/ToastContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 import Login from "./pages/Login";
@@ -16,11 +17,12 @@ import DeliveryDashboard from "./pages/DeliveryDashboard";
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <CartProvider>
-          <BrowserRouter>
-            <Navbar />
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <CartProvider>
+            <BrowserRouter>
+              <Navbar />
             <Routes>
               <Route path="/" element={<Storefront />} />
               <Route path="/login" element={<Login />} />
@@ -68,7 +70,8 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </CartProvider>
-    </AuthProvider>
-    </ToastProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

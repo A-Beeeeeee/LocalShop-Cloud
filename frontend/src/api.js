@@ -77,6 +77,11 @@ export const api = {
   getRetailers: (status = "all") => request(`/admin/retailers?status=${status}`, { auth: true }),
   approveRetailer: (id) => request(`/admin/retailers/${id}/approve`, { method: "PUT", auth: true }),
   rejectRetailer: (id) => request(`/admin/retailers/${id}`, { method: "DELETE", auth: true }),
-  getDeliveryPartners: () => request("/admin/delivery-partners", { auth: true }),
+
+  getPendingDeliveryPartners: () => request("/admin/delivery-partners?status=pending", { auth: true }),
+  getDeliveryPartners: (status = "all") => request(`/admin/delivery-partners?status=${status}`, { auth: true }),
+  approveDeliveryPartner: (id) => request(`/admin/delivery-partners/${id}/approve`, { method: "PUT", auth: true }),
+  rejectDeliveryPartner: (id) => request(`/admin/delivery-partners/${id}`, { method: "DELETE", auth: true }),
+
   getAdminStats: () => request("/admin/stats", { auth: true }),
 };
