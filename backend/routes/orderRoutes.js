@@ -273,7 +273,7 @@ router.get("/delivery/available", requireAuth, requireRole("delivery"), async (r
       "items.status": { $ne: "cancelled" }
     })
       .populate("customer", "name phone email")
-      .populate("items.retailer", "name shopName phone")
+      .populate("items.retailer", "name shopName phone addresses")
       .sort({ createdAt: -1 });
 
     res.json(orders);
@@ -287,7 +287,7 @@ router.get("/delivery/mine", requireAuth, requireRole("delivery"), async (req, r
   try {
     const orders = await Order.find({ deliveryPartner: req.user._id })
       .populate("customer", "name phone email")
-      .populate("items.retailer", "name shopName phone")
+      .populate("items.retailer", "name shopName phone addresses")
       .sort({ createdAt: -1 });
 
     res.json(orders);
@@ -314,7 +314,7 @@ router.put("/:id/delivery/accept", requireAuth, requireRole("delivery"), async (
 
     const populated = await Order.findById(order._id)
       .populate("customer", "name phone email")
-      .populate("items.retailer", "name shopName phone")
+      .populate("items.retailer", "name shopName phone addresses")
       .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
 
     res.json(populated);
@@ -340,7 +340,7 @@ router.put("/:id/delivery/pickup", requireAuth, requireRole("delivery"), async (
 
     const populated = await Order.findById(order._id)
       .populate("customer", "name phone email")
-      .populate("items.retailer", "name shopName phone")
+      .populate("items.retailer", "name shopName phone addresses")
       .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
 
     res.json(populated);
@@ -392,7 +392,7 @@ router.post("/:id/delivery/verify-otp", requireAuth, requireRole("delivery"), as
 
     const populated = await Order.findById(order._id)
       .populate("customer", "name phone email")
-      .populate("items.retailer", "name shopName phone")
+      .populate("items.retailer", "name shopName phone addresses")
       .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
 
     res.json({

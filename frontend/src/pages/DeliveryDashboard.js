@@ -5,6 +5,7 @@ import { useToast } from "../context/ToastContext";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import InvoiceModal from "../components/InvoiceModal";
+import MapNavigationModal from "../components/MapNavigationModal";
 import { 
   BikeIcon, 
   PackageIcon, 
@@ -18,7 +19,11 @@ import {
   StoreIcon, 
   ReceiptIcon,
   ShieldCheckIcon,
-  ZapIcon
+  ZapIcon,
+  NavigationIcon,
+  CompassIcon,
+  ExternalLinkIcon,
+  AlertTriangleIcon
 } from "../components/Icons";
 
 export default function DeliveryDashboard() {
@@ -35,6 +40,10 @@ export default function DeliveryDashboard() {
   // Online / Offline state
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable ?? true);
   const [togglingStatus, setTogglingStatus] = useState(false);
+
+  // Map Navigation Modal state
+  const [selectedOrderForMap, setSelectedOrderForMap] = useState(null);
+  const [initialMapTarget, setInitialMapTarget] = useState("customer");
 
   // OTP Verification Modal state
   const [selectedOrderForOtp, setSelectedOrderForOtp] = useState(null);
@@ -151,6 +160,21 @@ export default function DeliveryDashboard() {
   function handleViewInvoice(order) {
     setSelectedInvoiceOrder(order);
     setIsInvoiceModalOpen(true);
+  }
+
+  function openMapModal(order, target = "customer") {
+    setSelectedOrderForMap(order);
+    setInitialMapTarget(target);
+  }
+
+  function getStoreAddress(order) {
+    const retailer = order?.items?.[0]?.retailer;
+    const storeName = retailer?.shopName || retailer?.name || "Local Retail Merchant";
+    if (retailer?.addresses && retailer.addresses.length > 0) {
+      const addr = retailer.addresses[0];
+      return `${addr.flat || ""}, ${addr.area || ""}, ${addr.city || "Chennai"} ${addr.pincode || ""}`.trim();
+    }
+    return `${storeName}, Local Merchant, Chennai`;
   }
 
   function formatDate(dateStr) {
@@ -371,23 +395,51 @@ export default function DeliveryDashboard() {
                             <span>1. Store Pickup Point</span>
                           </span>
                           <span className={`badge ${isPickedUp ? "badge-success" : "badge-warning"} text-xs`} style={{ fontSize: "10px" }}>
-                            {isPickedUp ? "Picked Up ✅" : "Awaiting Pickup"}
+                            {isPickedUp ? "Picked Up" : "Awaiting Pickup"}
                           </span>
                         </div>
                         <div className="font-semibold text-xs">
                           {order.items?.[0]?.retailer?.shopName || order.items?.[0]?.retailer?.name || "Local Neighborhood Merchant"}
                         </div>
-                        <div className="text-muted text-xs" style={{ margin: "2px 0 6px" }}>
-                          {order.items?.[0]?.retailer?.phone ? (
-                            <a href={`tel:${order.items[0].retailer.phone}`} className="flex-center gap-1 font-semibold text-primary">
-                              <PhoneIcon size={11} /> Call Store: +91 {order.items[0].retailer.phone}
-                            </a>
-                          ) : (
-                            <span>Local Vendor Partner</span>
-                          )}
+                        <div className="text-muted text-xs truncate" style={{ margin: "2px 0" }} title={getStoreAddress(order)}>
+                          {getStoreAddress(order)}
                         </div>
-                        <div className="text-muted text-xs">
-                          <strong>Items to collect:</strong> {order.items?.length} item(s) • {order.items?.map(i => `${i.qty}x ${i.name}`).join(", ")}
+                        <div className="text-muted text-xs" style={{ margin: "2px 0 6px" }}>
+                          <strong>Items:</strong> {order.items?.length} item(s) • {order.items?.map(i => `${i.qty}x ${i.name}`).join(", ")}
+                        </div>
+
+                        {/* Store Navigation and Call Controls */}
+                        <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px" }}>
+                          <div className="flex-center gap-1">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(getStoreAddress(order))}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: "2px 7px", fontSize: "10.5px", color: "#0284c7" }}
+                              title="Open store location in Google Maps"
+                            >
+                              <NavigationIcon size={11} />
+                              <span>Google Maps</span>
+                              <ExternalLinkIcon size={9} />
+                            </a>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              onClick={() => openMapModal(order, "store")}
+                              title="View in interactive map"
+                            >
+                              <CompassIcon size={11} />
+                              <span>In-App</span>
+                            </button>
+                          </div>
+
+                          {order.items?.[0]?.retailer?.phone && (
+                            <a href={`tel:${order.items[0].retailer.phone}`} className="btn btn-secondary btn-sm" style={{ padding: "2px 7px", fontSize: "10.5px" }}>
+                              <PhoneIcon size={10} /> Call Store
+                            </a>
+                          )}
                         </div>
                       </div>
 
@@ -419,27 +471,71 @@ export default function DeliveryDashboard() {
                           <MapPinIcon size={11} style={{ display: "inline", marginRight: "3px" }} />
                           {order.address}
                         </div>
-                        <div className="text-muted text-xs">
+                        <div className="text-muted text-xs" style={{ marginBottom: "6px" }}>
                           {isCOD ? (
-                            <span className="text-danger font-bold">⚠️ Collect ₹{order.totalAmount} in Cash</span>
+                            <span className="text-danger font-bold flex-center gap-1">
+                              <AlertTriangleIcon size={11} color="#ef4444" /> Collect ₹{order.totalAmount} in Cash
+                            </span>
                           ) : (
-                            <span className="text-success font-semibold">✓ Pre-paid via Razorpay (No cash required)</span>
+                            <span className="text-success font-semibold flex-center gap-1">
+                              <CheckCircleIcon size={11} color="#10b981" /> Pre-paid via Razorpay (No cash)
+                            </span>
                           )}
+                        </div>
+
+                        {/* Customer Navigation Controls */}
+                        <div className="flex-between flex-wrap gap-1" style={{ borderTop: "1px dashed var(--color-border)", paddingTop: "6px" }}>
+                          <div className="flex-center gap-1">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.address)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: "2px 7px", fontSize: "10.5px" }}
+                              title="Open customer doorstep in Google Maps"
+                            >
+                              <NavigationIcon size={11} />
+                              <span>Google Maps</span>
+                              <ExternalLinkIcon size={9} />
+                            </a>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              onClick={() => openMapModal(order, "customer")}
+                              title="View in interactive map"
+                            >
+                              <CompassIcon size={11} />
+                              <span>In-App</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Rider Action Controls */}
                     <div className="flex-between flex-wrap gap-2" style={{ borderTop: "1px solid var(--color-border)", paddingTop: "10px" }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleViewInvoice(order)}
-                        style={{ padding: "4px 8px", fontSize: "11px" }}
-                      >
-                        <ReceiptIcon size={12} />
-                        <span>View Order Details</span>
-                      </button>
+                      <div className="flex-center gap-1">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => openMapModal(order, isPickedUp ? "customer" : "store")}
+                          style={{ padding: "4px 10px", fontSize: "11px", color: "var(--color-primary)", borderColor: "var(--color-primary-subtle)" }}
+                        >
+                          <NavigationIcon size={12} />
+                          <span>Live GPS Route Map</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleViewInvoice(order)}
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
+                        >
+                          <ReceiptIcon size={12} />
+                          <span>Details</span>
+                        </button>
+                      </div>
 
                       <div className="flex-center gap-2">
                         {!isPickedUp ? (
@@ -549,9 +645,21 @@ export default function DeliveryDashboard() {
                   </div>
 
                   <div className="flex-between flex-wrap gap-2" style={{ borderTop: "1px solid var(--color-border)", paddingTop: "10px" }}>
-                    <div className="text-muted text-xs flex-center gap-1">
-                      <ShieldCheckIcon size={12} color="#10b981" />
-                      <span>{order.paymentMethod === "razorpay" ? "Pre-paid Online" : "Cash on Delivery (COD)"}</span>
+                    <div className="text-muted text-xs flex-center gap-2">
+                      <div className="flex-center gap-1">
+                        <ShieldCheckIcon size={12} color="#10b981" />
+                        <span>{order.paymentMethod === "razorpay" ? "Pre-paid Online" : "Cash on Delivery (COD)"}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        style={{ padding: "2px 6px", fontSize: "10.5px", color: "var(--color-primary)" }}
+                        onClick={() => openMapModal(order, "route")}
+                        title="Preview route on Google Maps"
+                      >
+                        <NavigationIcon size={11} />
+                        <span>Preview Map</span>
+                      </button>
                     </div>
 
                     <button
@@ -633,14 +741,26 @@ export default function DeliveryDashboard() {
                           + ₹40
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            style={{ padding: "2px 6px", fontSize: "11px" }}
-                            onClick={() => handleViewInvoice(order)}
-                          >
-                            <ReceiptIcon size={12} />
-                          </button>
+                          <div className="flex-center gap-1 justify-end">
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ padding: "2px 6px", fontSize: "11px" }}
+                              onClick={() => openMapModal(order, "customer")}
+                              title="View delivery route map"
+                            >
+                              <NavigationIcon size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: "2px 6px", fontSize: "11px" }}
+                              onClick={() => handleViewInvoice(order)}
+                              title="View tax invoice"
+                            >
+                              <ReceiptIcon size={12} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -746,6 +866,14 @@ export default function DeliveryDashboard() {
           </div>
         </form>
       </Modal>
+
+      {/* Interactive Google Maps Navigation Modal */}
+      <MapNavigationModal
+        isOpen={Boolean(selectedOrderForMap)}
+        onClose={() => setSelectedOrderForMap(null)}
+        order={selectedOrderForMap}
+        initialTarget={initialMapTarget}
+      />
 
       {/* Official Tax Invoice Modal */}
       <InvoiceModal
