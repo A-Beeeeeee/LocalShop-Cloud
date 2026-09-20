@@ -31,9 +31,7 @@ export default function ProductDetailsModal({ isOpen, onClose, product, onAdd })
 
   function handleAddToCart() {
     if (isOutOfStock) return;
-    for (let i = 0; i < qty; i++) {
-      onAdd(product);
-    }
+    onAdd(product, qty);
     onClose();
   }
 

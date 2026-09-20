@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../api";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
+import Modal from "../components/Modal";
 import ProductCard from "../components/ProductCard";
 import ProductDetailsModal from "../components/ProductDetailsModal";
 import { 
@@ -15,7 +16,8 @@ import {
   MapPinIcon,
   StoreIcon,
   CompassIcon,
-  PhoneIcon
+  PhoneIcon,
+  AlertTriangleIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["All", "Groceries", "Apparel", "Home", "Electronics", "General"];
@@ -43,12 +45,28 @@ export default function Storefront() {
   const [error, setError] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [conflictModalData, setConflictModalData] = useState(null);
   const cart = useCart();
   const { showToast } = useToast();
 
-  function handleAdd(product) {
-    cart.addToCart(product);
+  function handleAdd(product, qty = 1) {
+    const res = cart.addToCart(product, false, qty);
+    if (res && res.conflict) {
+      setConflictModalData({
+        product,
+        qty,
+        ...res,
+      });
+      return;
+    }
     showToast(`Added "${product.name}" to cart`, "success");
+  }
+
+  function handleConfirmReplaceCart() {
+    if (!conflictModalData?.product) return;
+    cart.addToCart(conflictModalData.product, true, conflictModalData.qty || 1);
+    showToast(`Cart refreshed for ${conflictModalData.newLocality} • Added "${conflictModalData.product.name}"`, "success");
+    setConflictModalData(null);
   }
 
   // Load products and stores on category, locality, or store filter change
@@ -490,6 +508,58 @@ export default function Storefront() {
         product={selectedProduct}
         onAdd={handleAdd}
       />
+
+      {/* Hyperlocal Locality Cart Conflict Modal */}
+      <Modal
+        isOpen={Boolean(conflictModalData)}
+        onClose={() => setConflictModalData(null)}
+        title="Start Fresh Order in New Locality?"
+        maxWidth="460px"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{
+            backgroundColor: "var(--color-primary-subtle)",
+            border: "1px solid var(--color-primary-border)",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 14px",
+            display: "flex",
+            gap: "12px",
+            alignItems: "flex-start"
+          }}>
+            <AlertTriangleIcon size={22} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <div style={{ fontSize: "12.5px", color: "var(--color-text)" }}>
+              <div style={{ fontWeight: 700, marginBottom: "4px", fontSize: "13px" }}>
+                Different Hyperlocal Zone Detected
+              </div>
+              <p style={{ margin: "0 0 6px 0", lineHeight: 1.45, color: "var(--color-text-muted)" }}>
+                Your cart currently contains items from <strong>{conflictModalData?.currentShop}</strong> in <strong>📍 {conflictModalData?.currentLocality}</strong>.
+              </p>
+              <p style={{ margin: 0, lineHeight: 1.45, color: "var(--color-text-muted)" }}>
+                To maintain our <strong>15–30 min express delivery SLA</strong>, each order must originate from stores within the same 3–5 km radius. Adding items from <strong>{conflictModalData?.newShop}</strong> in <strong>📍 {conflictModalData?.newLocality}</strong> will replace your active cart.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setConflictModalData(null)}
+              style={{ padding: "6px 14px", fontSize: "12px" }}
+            >
+              Keep Current Cart
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleConfirmReplaceCart}
+              style={{ padding: "6px 14px", fontSize: "12px" }}
+            >
+              Start Fresh & Add Item
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

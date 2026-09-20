@@ -19,7 +19,8 @@ import {
   QrCodeIcon,
   HomeIcon,
   BriefcaseIcon,
-  PhoneIcon
+  PhoneIcon,
+  StoreIcon
 } from "../components/Icons";
 import Modal from "../components/Modal";
 import AddressModal from "../components/AddressModal";
@@ -222,8 +223,15 @@ export default function Cart() {
         {/* Left Column: Cart Items & Payment Method Selector */}
         <div className="checkout-items-col">
           <div className="card" style={{ marginBottom: "16px" }}>
-            <div className="card-header flex-between">
-              <h2 className="card-title">Cart Items ({cart.count})</h2>
+            <div className="card-header flex-between" style={{ flexWrap: "wrap", gap: "8px" }}>
+              <div className="flex-center gap-2">
+                <h2 className="card-title">Cart Items ({cart.count})</h2>
+                {cart.cartLocality && (
+                  <span className="badge badge-success text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
+                    📍 {cart.cartLocality} (3.5 km Express Zone)
+                  </span>
+                )}
+              </div>
               <span className="text-muted text-xs">Total items: {cart.count}</span>
             </div>
             <div className="cart-items-list">
@@ -235,7 +243,19 @@ export default function Cart() {
                     </div>
                     <div>
                       <h4 className="cart-item-name">{item.name}</h4>
-                      <span className="cart-item-unit-price">₹{item.price} each</span>
+                      <div className="flex-center gap-2 flex-wrap" style={{ marginTop: "3px" }}>
+                        <span className="cart-item-unit-price">₹{item.price} each</span>
+                        {item.shopName && (
+                          <span className="text-muted text-xs flex-center gap-1" style={{ fontSize: "11px" }}>
+                            • <StoreIcon size={11} color="var(--color-primary)" /> {item.shopName}
+                          </span>
+                        )}
+                        {item.storeLocality && (
+                          <span className="text-muted text-xs" style={{ fontSize: "10.5px" }}>
+                            (📍 {item.storeLocality})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
