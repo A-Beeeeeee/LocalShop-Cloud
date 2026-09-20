@@ -53,7 +53,7 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
     const isStandard = deliveryTier === "standard";
     const tier = isStandard ? "standard" : "express";
     const estDeliveryMins = isStandard ? 1440 : 30;
-    const estDelivery = isStandard ? "1–2 Business Days" : "15–30 mins";
+    const estimatedDelivery = isStandard ? "1–2 Business Days" : "15–30 mins";
     const courierPartner = isStandard ? "LocalShop Standard CityCourier" : "LocalShop HyperExpress";
 
     const order = await Order.create({
