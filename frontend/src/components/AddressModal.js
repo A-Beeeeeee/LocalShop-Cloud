@@ -20,8 +20,11 @@ export default function AddressModal({
   const [phone, setPhone] = useState("");
   const [altPhone, setAltPhone] = useState("");
   const [addressType, setAddressType] = useState("Home");
+  const [locality, setLocality] = useState("Anna Nagar");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const LOCALITIES = ["Anna Nagar", "T. Nagar", "Velachery", "Adyar", "Kelambakkam", "Tambaram", "Mylapore", "Other"];
 
   useEffect(() => {
     if (isOpen) {
@@ -33,6 +36,7 @@ export default function AddressModal({
         setPhone(initialData.phone || userProfile?.phone || "");
         setAltPhone(initialData.altPhone || "");
         setAddressType(initialData.addressType || "Home");
+        setLocality(initialData.locality || "Anna Nagar");
       } else {
         setFlat("");
         setArea("");
@@ -40,6 +44,7 @@ export default function AddressModal({
         setPhone(userProfile?.phone || "");
         setAltPhone("");
         setAddressType("Home");
+        setLocality("Anna Nagar");
       }
     }
   }, [isOpen, initialData, userProfile]);
@@ -68,9 +73,13 @@ export default function AddressModal({
 
     setSaving(true);
     try {
+      const fullArea = locality !== "Other" && !area.toLowerCase().includes(locality.toLowerCase())
+        ? `${area.trim()}, ${locality}, Chennai`
+        : area.trim();
+
       await onSaveAddress({
         flat: flat.trim(),
-        area: area.trim(),
+        area: fullArea,
         fullName: fullName.trim(),
         phone: cleanPhone,
         altPhone: altPhone.trim(),
@@ -121,13 +130,30 @@ export default function AddressModal({
           />
         </div>
 
-        {/* Field 2: Area / Sector / Locality */}
+        {/* Field 2: Neighborhood Locality Selector */}
         <div className="form-group deliver-to-floating" style={{ marginBottom: "10px" }}>
-          <label className="deliver-to-sublabel">Area / Sector / Locality *</label>
+          <label className="deliver-to-sublabel">Delivery Locality / Zone *</label>
+          <select
+            className="form-select deliver-to-input"
+            value={locality}
+            onChange={(e) => setLocality(e.target.value)}
+            style={{ fontSize: "12.5px", fontWeight: 600 }}
+          >
+            {LOCALITIES.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc === "Other" ? "Other / Outside Chennai" : `📍 ${loc}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Field 3: Area / Sector / Street / Landmark */}
+        <div className="form-group deliver-to-floating" style={{ marginBottom: "10px" }}>
+          <label className="deliver-to-sublabel">Street, Sector & Landmark *</label>
           <input
             type="text"
             className="form-input deliver-to-input"
-            placeholder="Street, Locality, Area, City, Pincode"
+            placeholder="e.g. 2nd Avenue, Near Roundtana"
             value={area}
             onChange={(e) => setArea(e.target.value)}
             required

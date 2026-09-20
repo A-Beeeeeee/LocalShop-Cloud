@@ -50,6 +50,39 @@ export default function Cart() {
 
   const navigate = useNavigate();
 
+  function getLocalityFromAddress(text) {
+    if (!text) return null;
+    const t = text.toLowerCase();
+    const known = [
+      { name: "Anna Nagar", aliases: ["anna nagar", "annanagar", "600040"] },
+      { name: "T. Nagar", aliases: ["t. nagar", "t nagar", "tnagar", "thyagaraya", "600017"] },
+      { name: "Velachery", aliases: ["velachery", "velacheri", "600042"] },
+      { name: "Adyar", aliases: ["adyar", "600020"] },
+      { name: "Kelambakkam", aliases: ["kelambakkam", "omr", "vit chennai", "vandalur", "600127"] },
+      { name: "Tambaram", aliases: ["tambaram", "600045"] },
+      { name: "Mylapore", aliases: ["mylapore", "600004"] },
+    ];
+    for (const k of known) {
+      if (k.aliases.some((alias) => t.includes(alias))) {
+        return k.name;
+      }
+    }
+    return null;
+  }
+
+  const selectedAddrObj = savedAddresses.find((a) => a._id === selectedAddressId);
+  const destinationLocality = getLocalityFromAddress((selectedAddrObj?.area || "") + " " + address);
+  const storeLocality = cart.cartLocality || "Anna Nagar";
+  const isDestinationMismatch = Boolean(
+    !cart.isMultiLocality &&
+    destinationLocality &&
+    storeLocality &&
+    destinationLocality.toLowerCase() !== storeLocality.toLowerCase()
+  );
+  const effectiveDeliveryTier = cart.deliveryTier === "standard" || isDestinationMismatch
+    ? "standard"
+    : "express";
+
   useEffect(() => {
     loadSavedAddresses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,7 +190,7 @@ export default function Cart() {
         paymentMethod: method,
         paymentStatus: status,
         paymentId: paymentId || undefined,
-        deliveryTier: cart.deliveryTier || "express",
+        deliveryTier: effectiveDeliveryTier,
       });
       cart.clearCart();
       setIsRazorpayModalOpen(false);
@@ -238,9 +271,11 @@ export default function Cart() {
             <div className="card-header flex-between" style={{ flexWrap: "wrap", gap: "8px" }}>
               <div className="flex-center gap-2">
                 <h2 className="card-title">Cart Items ({cart.count})</h2>
-                {cart.deliveryTier === "standard" ? (
+                {effectiveDeliveryTier === "standard" ? (
                   <span className="badge badge-primary text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
-                    📦 Standard City Delivery (1–2 Days) • Multi-Store
+                    {isDestinationMismatch
+                      ? `📦 Cross-Zone (${storeLocality} ➔ ${destinationLocality} • 1–2 Days)`
+                      : "📦 Standard City Delivery (1–2 Days) • Multi-Store"}
                   </span>
                 ) : cart.cartLocality ? (
                   <span className="badge badge-success text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
@@ -499,6 +534,48 @@ export default function Cart() {
               )}
             </div>
 
+            {/* Real-time Destination Geofence Status Callout */}
+            {isDestinationMismatch ? (
+              <div style={{
+                marginTop: "10px",
+                padding: "8px 10px",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "var(--color-primary-subtle)",
+                border: "1px solid var(--color-primary-border)",
+                fontSize: "11px",
+                display: "flex",
+                gap: "8px",
+                alignItems: "flex-start"
+              }}>
+                <span style={{ fontSize: "14px" }}>📦</span>
+                <div>
+                  <div style={{ fontWeight: 700, color: "var(--color-primary)", marginBottom: "2px" }}>
+                    Cross-Zone Destination (1–2 Days):
+                  </div>
+                  <div style={{ color: "var(--color-text)", lineHeight: 1.35 }}>
+                    Store is in <strong>📍 {storeLocality}</strong>, but your delivery address is in <strong>📍 {destinationLocality}</strong> (long distance across Chennai). Order will be dispatched via Standard City Courier.
+                  </div>
+                </div>
+              </div>
+            ) : destinationLocality && !cart.isMultiLocality ? (
+              <div style={{
+                marginTop: "10px",
+                padding: "6px 10px",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                fontSize: "11px",
+                display: "flex",
+                gap: "8px",
+                alignItems: "center"
+              }}>
+                <ShieldCheckIcon size={14} color="#10b981" />
+                <span style={{ color: "#065f46", fontWeight: 600 }}>
+                  ⚡ Hyperlocal Zone Verified: Store & Doorstep both in 📍 {storeLocality} (15–30 Min Express).
+                </span>
+              </div>
+            ) : null}
+
             <div className="summary-divider" />
 
             <div className="summary-row">
@@ -513,8 +590,12 @@ export default function Cart() {
             </div>
             <div className="summary-row">
               <span className="text-muted">Delivery Speed</span>
-              <span className="font-semibold" style={{ color: cart.deliveryTier === "standard" ? "var(--color-primary)" : "#10b981", fontSize: "11.5px" }}>
-                {cart.deliveryTier === "standard" ? "📦 1–2 Days (Standard City-Wide)" : "⚡ 15–30 Mins (Hyperlocal Express)"}
+              <span className="font-semibold" style={{ color: effectiveDeliveryTier === "standard" ? "var(--color-primary)" : "#10b981", fontSize: "11.5px" }}>
+                {effectiveDeliveryTier === "standard" 
+                  ? isDestinationMismatch 
+                    ? "📦 1–2 Days (Cross-Zone Standard)" 
+                    : "📦 1–2 Days (Standard City-Wide)" 
+                  : "⚡ 15–30 Mins (Hyperlocal Express)"}
               </span>
             </div>
             <div className="summary-row">
