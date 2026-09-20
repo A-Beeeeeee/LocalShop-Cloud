@@ -23,7 +23,8 @@ import {
   ReceiptIcon,
   BikeIcon,
   PhoneIcon,
-  MapPinIcon
+  MapPinIcon,
+  ClockIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -111,24 +112,52 @@ export default function RetailerDashboard() {
     }
   }
 
-  function handleViewOrderInvoice(row) {
-    const fullOrder = orders.find((o) => o._id === row.orderId);
-    if (fullOrder) {
-      setSelectedInvoiceOrder(fullOrder);
+  function handleViewOrderInvoice(orderOrRow) {
+    if (!orderOrRow) return;
+    if (orderOrRow.items && Array.isArray(orderOrRow.items)) {
+      setSelectedInvoiceOrder(orderOrRow);
     } else {
-      setSelectedInvoiceOrder({
-        _id: row.orderId,
-        createdAt: row.createdAt,
-        customer: { name: row.customerName, email: row.customerEmail },
-        address: row.address,
-        paymentMethod: row.paymentMethod,
-        paymentStatus: row.paymentStatus,
-        paymentId: row.paymentId,
-        items: [row.item],
-        totalAmount: row.item.price * row.item.qty,
-      });
+      const fullOrder = orders.find((o) => o._id === orderOrRow.orderId);
+      if (fullOrder) {
+        setSelectedInvoiceOrder(fullOrder);
+      } else {
+        setSelectedInvoiceOrder({
+          _id: orderOrRow.orderId,
+          createdAt: orderOrRow.createdAt,
+          customer: { name: orderOrRow.customerName, email: orderOrRow.customerEmail },
+          address: orderOrRow.address,
+          paymentMethod: orderOrRow.paymentMethod,
+          paymentStatus: orderOrRow.paymentStatus,
+          paymentId: orderOrRow.paymentId,
+          items: orderOrRow.item ? [orderOrRow.item] : [],
+          totalAmount: orderOrRow.item ? orderOrRow.item.price * orderOrRow.item.qty : 0,
+        });
+      }
     }
     setIsInvoiceModalOpen(true);
+  }
+
+  async function handlePackEntireOrder(order) {
+    const pendingItems = (order.items || []).filter((i) => (i.status || "pending") === "pending");
+    if (pendingItems.length === 0) return;
+    try {
+      await api.fulfillEntireOrder(order._id);
+      showToast(`All ${pendingItems.length} item(s) in Order #${order._id.slice(-6).toUpperCase()} packed & ready for courier!`, "success");
+      loadAll();
+    } catch (err) {
+      showToast(err.message || "Failed to pack order", "error");
+    }
+  }
+
+  function formatDateTime(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   function updateForm(field, value) {
@@ -366,7 +395,7 @@ export default function RetailerDashboard() {
     );
   });
 
-  // Flatten and filter order items
+  // Flatten and filter order items for overview preview
   const flattenedOrderItems = [];
   orders.forEach((order) => {
     if (order.items && Array.isArray(order.items)) {
@@ -388,6 +417,13 @@ export default function RetailerDashboard() {
         }
       });
     }
+  });
+
+  // Filtered grouped orders for Tab 3 fulfillment
+  const filteredOrders = orders.filter((order) => {
+    if (!order.items || order.items.length === 0) return false;
+    if (orderStatusFilter === "all") return true;
+    return order.items.some((item) => (item.status || "pending") === orderStatusFilter);
   });
 
   return (
@@ -746,265 +782,305 @@ export default function RetailerDashboard() {
         </div>
       )}
 
-      {/* TAB 3: ORDERS (FULFILLMENT) */}
+      {/* TAB 3: ORDERS (GROUPED ORDER PACKAGES) */}
       {activeTab === "orders" && (
         <div className="tab-content">
-          <div className="card">
-            <div className="card-header flex-between flex-wrap gap-2">
-              <div>
-                <h3 className="card-title">Order Fulfillment</h3>
-                <p className="card-subtitle">Manage fulfillment status and process customer returns & refunds</p>
-              </div>
-
-              {/* Status Filter */}
-              <div className="flex-center gap-2">
-                <span className="text-muted text-xs">Status:</span>
-                <select
-                  value={orderStatusFilter}
-                  onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  className="form-select form-select-sm"
-                  style={{ width: "auto", padding: "2px 6px" }}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="fulfilled">Fulfilled</option>
-                  <option value="return_requested">Return Requested</option>
-                  <option value="refunded">Refunded</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
+          <div className="flex-between flex-wrap gap-2" style={{ marginBottom: "12px" }}>
+            <div>
+              <h2 className="page-title" style={{ fontSize: "1.15rem" }}>Order Fulfillment & Packages</h2>
+              <p className="page-subtitle">Grouped customer orders • Accept & pack entire packages or manage individual line items</p>
             </div>
 
-            {flattenedOrderItems.length === 0 ? (
-              <div className="empty-state" style={{ padding: "24px 12px" }}>
-                <BagIcon size={24} color="#94a3b8" />
-                <h3 className="empty-title" style={{ fontSize: "13px", marginTop: "6px" }}>
-                  No orders found
-                </h3>
-                <p className="empty-sub text-xs">
-                  {orderStatusFilter !== "all"
-                    ? `No orders currently match status "${orderStatusFilter}".`
-                    : "When customers order your products, they will appear here for fulfillment."}
-                </p>
-              </div>
-            ) : (
-              <div className="table-wrapper">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer & Delivery</th>
-                      <th>Product</th>
-                      <th style={{ textAlign: "center" }}>Qty</th>
-                      <th style={{ textAlign: "right" }}>Total</th>
-                      <th style={{ minWidth: "180px" }}>Order Status & Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flattenedOrderItems.map((row, idx) => (
-                      <tr key={`${row.orderId}-${row.item.product}-${idx}`}>
-                        <td>
-                          <div className="font-mono text-xs font-bold">
-                            #{row.orderId.slice(-6).toUpperCase()}
-                          </div>
-                          <div className="text-muted text-xs">
-                            {new Date(row.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="font-semibold text-xs">{row.customerName}</div>
-                          {row.customerEmail && (
-                            <div className="text-muted text-xs">{row.customerEmail}</div>
+            {/* Status Filter */}
+            <div className="flex-center gap-2">
+              <span className="text-muted text-xs">Filter:</span>
+              <select
+                value={orderStatusFilter}
+                onChange={(e) => setOrderStatusFilter(e.target.value)}
+                className="form-select form-select-sm"
+                style={{ width: "auto", padding: "3px 8px" }}
+              >
+                <option value="all">All Orders ({orders.length})</option>
+                <option value="pending">Pending Acceptance</option>
+                <option value="fulfilled">Packed & Ready</option>
+                <option value="return_requested">Return Requested</option>
+                <option value="refunded">Refunded</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredOrders.length === 0 ? (
+            <div className="card empty-state" style={{ padding: "36px 16px" }}>
+              <BagIcon size={28} color="#94a3b8" />
+              <h3 className="empty-title" style={{ fontSize: "14px", marginTop: "8px" }}>
+                No orders found
+              </h3>
+              <p className="empty-sub text-xs">
+                {orderStatusFilter !== "all"
+                  ? `No customer orders currently have items matching "${orderStatusFilter}".`
+                  : "When customers order products from your store catalog, they will appear here as grouped fulfillment packages."}
+              </p>
+            </div>
+          ) : (
+            <div className="card-stack">
+              {filteredOrders.map((order) => {
+                const retailerItems = order.items || [];
+                const pendingItems = retailerItems.filter((i) => (i.status || "pending") === "pending");
+                const orderRetailerTotal = retailerItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+                return (
+                  <div key={order._id} className="card order-card">
+                    {/* Order Package Header */}
+                    <div className="order-header">
+                      <div className="order-header-meta">
+                        <div className="order-id">
+                          <span className="order-id-label">Order</span>
+                          <span className="order-id-val">#{order._id.slice(-6).toUpperCase()}</span>
+                        </div>
+
+                        <div className="order-meta-item">
+                          <ClockIcon size={12} />
+                          <span>{formatDateTime(order.createdAt)}</span>
+                        </div>
+
+                        <div className="order-meta-item font-semibold">
+                          <span>{order.customer?.name || "Customer"}</span>
+                          {order.customer?.phone && (
+                            <a
+                              href={`tel:${order.customer.phone}`}
+                              className="text-primary flex-center gap-1"
+                              style={{ marginLeft: "4px", fontSize: "11px", textDecoration: "underline" }}
+                              title="Call customer"
+                            >
+                              <PhoneIcon size={10} />
+                              {order.customer.phone}
+                            </a>
                           )}
-                          {row.address && (
-                            <div className="text-muted text-xs truncate" style={{ maxWidth: "180px" }} title={row.address}>
-                              {row.address}
-                            </div>
-                          )}
-                          <div style={{ marginTop: "3px", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
-                            {row.paymentMethod === "razorpay" ? (
-                              <span className="badge badge-success text-xs" style={{ fontSize: "10px", padding: "1px 4px" }} title={row.paymentId || "Online"}>
-                                Razorpay (Paid)
-                              </span>
-                            ) : (
-                              <span className="badge badge-warning text-xs" style={{ fontSize: "10px", padding: "1px 4px" }}>
-                                Cash on Delivery
-                              </span>
-                            )}
+                        </div>
+
+                        {order.address && (
+                          <div className="order-meta-item order-address" title={order.address}>
+                            <MapPinIcon size={12} />
+                            <span>{order.address}</span>
                           </div>
-                          {row.deliveryPartner ? (
-                            <div style={{ marginTop: "4px", fontSize: "10.5px", display: "flex", alignItems: "center", gap: "4px", color: "var(--color-primary)" }}>
+                        )}
+
+                        {/* Payment Status */}
+                        <div className="order-meta-item">
+                          {order.paymentMethod === "razorpay" ? (
+                            <span className="badge badge-success text-xs font-semibold" style={{ fontSize: "10px", padding: "1px 6px" }} title={order.paymentId || "Online Paid"}>
+                              Razorpay (Paid)
+                            </span>
+                          ) : (
+                            <span className="badge badge-warning text-xs font-semibold" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                              Cash on Delivery
+                            </span>
+                          )}
+                        </div>
+
+                        {/* SLA Tier */}
+                        <div className="order-meta-item">
+                          {order.deliveryTier === "standard" ? (
+                            <span className="badge badge-primary text-xs font-bold" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                              📦 Standard (1–2 Days)
+                            </span>
+                          ) : (
+                            <span className="badge badge-success text-xs font-bold" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                              ⚡ Hyperlocal (15–30 Mins)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Delivery Partner Status */}
+                        <div className="order-meta-item">
+                          {order.deliveryPartner ? (
+                            <span className="badge badge-delivery text-xs flex-center gap-1" style={{ fontSize: "10px", padding: "1px 6px" }}>
                               <BikeIcon size={11} />
                               <span>
-                                <strong>{row.deliveryPartner.name}</strong> ({row.deliveryPartner.vehicleType || "Bike"}): <span className="badge badge-delivery text-xs" style={{ fontSize: "9px", padding: "1px 4px" }}>{row.deliveryStatus || "assigned"}</span>
+                                Rider: <strong>{order.deliveryPartner.name}</strong> ({order.deliveryPartner.vehicleType || "Bike"} • {order.deliveryStatus || "assigned"})
                               </span>
-                              {row.deliveryPartner.phone && (
-                                <a href={`tel:${row.deliveryPartner.phone}`} style={{ color: "var(--color-primary)", textDecoration: "underline", marginLeft: "2px" }} title="Call rider">
-                                  <PhoneIcon size={9} style={{ display: "inline" }} />
+                              {order.deliveryPartner.phone && (
+                                <a href={`tel:${order.deliveryPartner.phone}`} style={{ color: "var(--color-primary)", marginLeft: "3px" }} title="Call rider">
+                                  <PhoneIcon size={9} />
                                 </a>
                               )}
-                            </div>
+                            </span>
                           ) : (
-                            <div style={{ marginTop: "4px", fontSize: "10px", color: "#64748b" }}>
-                              <BikeIcon size={10} style={{ display: "inline", marginRight: "3px" }} />
-                              <span>Open for rider claim</span>
-                            </div>
+                            <span className="badge badge-default text-xs flex-center gap-1" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                              <BikeIcon size={10} />
+                              <span>Open for Rider Claim</span>
+                            </span>
                           )}
-                        </td>
-                        <td>
-                          <div className="font-medium text-xs">{row.item.name}</div>
-                          <div className="text-muted text-xs">₹{row.item.price} each</div>
-                          {row.item.returnReason && (
-                            <div style={{
-                              marginTop: "4px",
-                              padding: "2px 6px",
-                              backgroundColor: "var(--color-warning-bg)",
-                              border: "1px solid var(--color-warning-border)",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              color: "var(--color-warning-text)"
-                            }}>
-                              <strong>Return Reason:</strong> {row.item.returnReason}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ textAlign: "center", fontWeight: 600 }}>{row.item.qty}</td>
-                        <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-primary)" }}>
-                          ₹{row.item.price * row.item.qty}
-                        </td>
-                        <td>
-                          {row.item.status === "pending" && (
-                            <div className="flex-center gap-1 flex-wrap">
-                              <button
-                                type="button"
-                                className="btn btn-primary btn-sm"
-                                style={{ padding: "3px 8px", fontSize: "11px" }}
-                                onClick={() => handleStatusChange(row.orderId, row.item.product || row.item._id, "fulfilled")}
-                                title="Accept, pack, and mark fulfilled"
-                              >
-                                <CheckIcon size={12} />
-                                <span>Accept & Fulfill</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm text-danger"
-                                style={{ padding: "3px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
-                                onClick={() => {
-                                  if (window.confirm(`Decline item "${row.item.name}" (out of stock)? Customer will be notified and refunded.`)) {
-                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "cancelled");
-                                  }
-                                }}
-                                title="Decline / Out of stock"
-                              >
-                                <XIcon size={12} />
-                                <span>Decline</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "3px 6px", fontSize: "11px" }}
-                                onClick={() => handleViewOrderInvoice(row)}
-                                title="View Tax Invoice"
-                              >
-                                <ReceiptIcon size={12} />
-                              </button>
-                            </div>
-                          )}
+                        </div>
+                      </div>
 
-                          {row.item.status === "return_requested" && (
-                            <div className="flex-center gap-1 flex-wrap">
-                              <button
-                                type="button"
-                                className="btn btn-primary btn-sm"
-                                style={{ padding: "3px 8px", fontSize: "11px", backgroundColor: "var(--color-success)", borderColor: "var(--color-success)" }}
-                                onClick={() => {
-                                  if (window.confirm(`Approve return for "${row.item.name}"? Catalog stock will be restored and refund will be issued.`)) {
-                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "refunded");
-                                  }
-                                }}
-                                title="Approve return, restock catalog, and process refund"
-                              >
-                                <CheckIcon size={12} />
-                                <span>Approve Return</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm text-danger"
-                                style={{ padding: "3px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
-                                onClick={() => {
-                                  if (window.confirm(`Decline return request and keep order marked as fulfilled?`)) {
-                                    handleStatusChange(row.orderId, row.item.product || row.item._id, "fulfilled");
-                                  }
-                                }}
-                                title="Decline return request"
-                              >
-                                <XIcon size={12} />
-                                <span>Decline</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "3px 6px", fontSize: "11px" }}
-                                onClick={() => handleViewOrderInvoice(row)}
-                                title="View Tax Invoice"
-                              >
-                                <ReceiptIcon size={12} />
-                              </button>
-                            </div>
-                          )}
+                      <div className="flex-center gap-2 flex-wrap">
+                        {/* 1-Click Accept & Pack Entire Package Button */}
+                        {pendingItems.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: "3px 10px", fontSize: "11.5px", fontWeight: 600 }}
+                            onClick={() => handlePackEntireOrder(order)}
+                            title="Accept, pack, and mark all items in this order as ready for courier"
+                          >
+                            <PackageIcon size={13} />
+                            <span>Accept & Pack All ({pendingItems.length} Item{pendingItems.length > 1 ? "s" : ""})</span>
+                          </button>
+                        )}
 
-                          {row.item.status === "fulfilled" && (
-                            <div className="flex-center gap-1">
-                              <StatusBadge status="fulfilled" label="Fulfilled & Dispatched" size="sm" />
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "3px 6px", fontSize: "11px" }}
-                                onClick={() => handleViewOrderInvoice(row)}
-                                title="View Tax Invoice"
-                              >
-                                <ReceiptIcon size={12} />
-                              </button>
-                            </div>
-                          )}
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: "3px 8px", fontSize: "11px" }}
+                          onClick={() => handleViewOrderInvoice(order)}
+                          title="View Tax Invoice"
+                        >
+                          <ReceiptIcon size={12} />
+                          <span>Invoice</span>
+                        </button>
 
-                          {row.item.status === "refunded" && (
-                            <div className="flex-center gap-1">
-                              <StatusBadge status="refunded" label="Refunded & Restocked" size="sm" />
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "3px 6px", fontSize: "11px" }}
-                                onClick={() => handleViewOrderInvoice(row)}
-                                title="View Tax Invoice"
-                              >
-                                <ReceiptIcon size={12} />
-                              </button>
-                            </div>
-                          )}
+                        <div className="order-total-badge">
+                          <span className="order-total-label">Store Total:</span>
+                          <span className="order-total-val">₹{orderRetailerTotal}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                          {row.item.status === "cancelled" && (
-                            <div className="flex-center gap-1">
-                              <StatusBadge status="cancelled" label="Cancelled" size="sm" />
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "3px 6px", fontSize: "11px" }}
-                                onClick={() => handleViewOrderInvoice(row)}
-                                title="View Tax Invoice"
-                              >
-                                <ReceiptIcon size={12} />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                    {/* Order Items Table */}
+                    <div className="table-wrapper" style={{ marginTop: "4px" }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th style={{ width: "90px", textAlign: "center" }}>Unit Price</th>
+                            <th style={{ width: "60px", textAlign: "center" }}>Qty</th>
+                            <th style={{ width: "90px", textAlign: "right" }}>Subtotal</th>
+                            <th style={{ width: "140px", textAlign: "center" }}>Item Status</th>
+                            <th style={{ width: "190px", textAlign: "right" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {retailerItems.map((item, idx) => (
+                            <tr key={`${order._id}-${item.product || item._id}-${idx}`}>
+                              <td>
+                                <div className="font-semibold text-xs">{item.name}</div>
+                                {item.returnReason && (
+                                  <div
+                                    style={{
+                                      marginTop: "3px",
+                                      padding: "2px 6px",
+                                      backgroundColor: "var(--color-warning-bg)",
+                                      border: "1px solid var(--color-warning-border)",
+                                      borderRadius: "4px",
+                                      fontSize: "10px",
+                                      color: "var(--color-warning-text)",
+                                    }}
+                                  >
+                                    <strong>Return Reason:</strong> {item.returnReason}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ textAlign: "center", fontSize: "11.5px" }}>₹{item.price}</td>
+                              <td style={{ textAlign: "center", fontWeight: 600, fontSize: "11.5px" }}>{item.qty}</td>
+                              <td style={{ textAlign: "right", fontWeight: 700, color: "var(--color-primary)", fontSize: "12px" }}>
+                                ₹{item.price * item.qty}
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <StatusBadge status={item.status || "pending"} size="sm" />
+                              </td>
+                              <td style={{ textAlign: "right" }}>
+                                {item.status === "pending" && (
+                                  <div className="flex-center justify-end gap-1 flex-wrap">
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary btn-sm"
+                                      style={{ padding: "2px 7px", fontSize: "11px" }}
+                                      onClick={() => handleStatusChange(order._id, item.product || item._id, "fulfilled")}
+                                      title="Accept & pack item"
+                                    >
+                                      <CheckIcon size={11} />
+                                      <span>Pack Item</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm text-danger"
+                                      style={{ padding: "2px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
+                                      onClick={() => {
+                                        if (window.confirm(`Decline item "${item.name}" (out of stock)? Customer will be refunded if paid online.`)) {
+                                          handleStatusChange(order._id, item.product || item._id, "cancelled");
+                                        }
+                                      }}
+                                      title="Decline / Out of stock"
+                                    >
+                                      <XIcon size={11} />
+                                      <span>Decline</span>
+                                    </button>
+                                  </div>
+                                )}
+
+                                {item.status === "return_requested" && (
+                                  <div className="flex-center justify-end gap-1 flex-wrap">
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary btn-sm"
+                                      style={{ padding: "2px 7px", fontSize: "11px", backgroundColor: "var(--color-success)", borderColor: "var(--color-success)" }}
+                                      onClick={() => {
+                                        if (window.confirm(`Approve return for "${item.name}"? Catalog stock will be restored and refund processed.`)) {
+                                          handleStatusChange(order._id, item.product || item._id, "refunded");
+                                        }
+                                      }}
+                                      title="Approve return, restock catalog, and refund"
+                                    >
+                                      <CheckIcon size={11} />
+                                      <span>Approve</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm text-danger"
+                                      style={{ padding: "2px 6px", fontSize: "11px", borderColor: "var(--color-danger-border)" }}
+                                      onClick={() => {
+                                        if (window.confirm(`Decline return request for "${item.name}"?`)) {
+                                          handleStatusChange(order._id, item.product || item._id, "fulfilled");
+                                        }
+                                      }}
+                                      title="Decline return request"
+                                    >
+                                      <XIcon size={11} />
+                                      <span>Decline</span>
+                                    </button>
+                                  </div>
+                                )}
+
+                                {item.status === "fulfilled" && (
+                                  <span className="text-success text-xs font-semibold flex-center justify-end gap-1" style={{ fontSize: "10.5px" }}>
+                                    <CheckIcon size={11} /> Packed & Ready
+                                  </span>
+                                )}
+
+                                {item.status === "refunded" && (
+                                  <span className="text-muted text-xs font-semibold flex-center justify-end gap-1" style={{ fontSize: "10.5px" }}>
+                                    Restocked & Refunded
+                                  </span>
+                                )}
+
+                                {item.status === "cancelled" && (
+                                  <span className="text-danger text-xs font-semibold flex-center justify-end gap-1" style={{ fontSize: "10.5px" }}>
+                                    Declined / Cancelled
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

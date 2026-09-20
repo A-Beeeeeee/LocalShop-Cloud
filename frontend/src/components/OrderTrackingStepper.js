@@ -154,58 +154,92 @@ export default function OrderTrackingStepper({ order }) {
   }
 
   // Case 3: Standard / Multi-Store Live Delivery Flow (Default)
-  const isFulfilled = allActiveFulfilled;
-  const isPartiallyFulfilled = someActiveFulfilled && !allActiveFulfilled;
+  const isDelivered = order.deliveryStatus === "delivered";
+  const isOutForDelivery = order.deliveryStatus === "out_for_delivery";
+  const isPickedUp = order.deliveryStatus === "picked_up" || isOutForDelivery;
+  const isRiderAssigned = order.deliveryStatus === "assigned" || Boolean(order.deliveryPartner);
+  const isPacked = allActiveFulfilled || isPickedUp || isDelivered;
+  const isPartiallyPacked = someActiveFulfilled && !allActiveFulfilled && !isPickedUp && !isDelivered;
 
   const steps = [
     {
       id: "placed",
       label: "Order Placed",
-      desc: "Received & verified by stores",
+      desc: `Order received (${order.paymentMethod === "razorpay" ? "Paid Online" : "Cash on Delivery"})`,
       status: "complete",
       icon: <ClockIcon size={14} />,
     },
     {
       id: "processing",
       label: "Packing & Quality Check",
-      desc: isFulfilled 
-        ? `All ${activeCount} active items packed`
-        : isPartiallyFulfilled 
-        ? `${fulfilledItems.length} of ${activeCount} items packed & dispatched` 
-        : `Stores preparing ${activeCount} items`,
-      status: isFulfilled ? "complete" : "current",
+      desc: isPacked
+        ? `All ${activeCount} item(s) packed & verified by store`
+        : isPartiallyPacked
+        ? `${fulfilledItems.length} of ${activeCount} item(s) packed`
+        : `Store preparing & packing ${activeCount} item(s)`,
+      status: isPacked ? "complete" : "current",
       icon: <PackageIcon size={14} />,
     },
     {
       id: "dispatch",
       label: "Out for Delivery",
-      desc: isFulfilled 
-        ? "All packages in transit / delivered" 
-        : isPartiallyFulfilled 
-        ? "Partial packages out for delivery" 
-        : "Estimated within 30-45 mins",
-      status: isFulfilled ? "complete" : isPartiallyFulfilled ? "current" : "upcoming",
+      desc: isDelivered
+        ? "Packages collected & delivered by courier"
+        : isOutForDelivery
+        ? "Rider picked up packages • En route to your address"
+        : isPickedUp
+        ? "Rider collected package from store"
+        : isRiderAssigned
+        ? `Rider assigned (${order.deliveryPartner?.name || "Courier"}) • Heading to store`
+        : isPacked
+        ? "Packed & awaiting courier pickup"
+        : "Estimated pickup in ~10-15 mins",
+      status: isDelivered
+        ? "complete"
+        : (isOutForDelivery || isPickedUp || isRiderAssigned)
+        ? "current"
+        : "upcoming",
       icon: <TruckIcon size={14} />,
     },
     {
       id: "delivered",
       label: "Delivered",
-      desc: isFulfilled ? "Handed over to customer" : "Estimated soon",
-      status: isFulfilled ? "complete" : "upcoming",
+      desc: isDelivered
+        ? "Delivered & verified with doorstep OTP"
+        : isOutForDelivery
+        ? "Rider arriving at doorstep soon"
+        : "Share 4-digit OTP with rider upon arrival",
+      status: isDelivered ? "complete" : "upcoming",
       icon: <CheckCircleIcon size={14} />,
     },
   ];
+
+  const headerBadgeText = isDelivered
+    ? "Delivered (Handover Complete)"
+    : isOutForDelivery
+    ? "Out for Delivery (Rider en route)"
+    : isPickedUp
+    ? "Picked Up by Courier"
+    : isRiderAssigned
+    ? `Rider Assigned (${order.deliveryPartner?.name || "Courier"})`
+    : isPacked
+    ? "Packed & Ready for Courier Pickup"
+    : isPartiallyPacked
+    ? `Partially Packed (${fulfilledItems.length}/${activeCount} items)`
+    : `Order Placed (${pendingItems.length} item(s) awaiting packing)`;
+
+  const headerBadgeClass = isDelivered
+    ? "text-success"
+    : (isOutForDelivery || isPickedUp || isRiderAssigned)
+    ? "text-primary"
+    : "text-warning";
 
   return (
     <div className="order-stepper-container">
       <div className="order-stepper-header">
         <span className="stepper-title">Live Delivery Progress</span>
-        <span className={`stepper-badge ${isFulfilled ? "text-success" : isPartiallyFulfilled ? "text-primary" : "text-warning"}`}>
-          {isFulfilled 
-            ? "Delivered (All items fulfilled)" 
-            : isPartiallyFulfilled 
-            ? `In Transit (${fulfilledItems.length} of ${activeCount} items fulfilled)` 
-            : `Order Placed (${pendingItems.length} items awaiting packing)`}
+        <span className={`stepper-badge ${headerBadgeClass}`}>
+          {headerBadgeText}
         </span>
       </div>
       <div className="order-stepper-track">
@@ -229,9 +263,9 @@ export default function OrderTrackingStepper({ order }) {
       <div className="delivery-dispatch-card">
         <div className="delivery-dispatch-main">
           <div className="delivery-partner-badge">
-            <span className={`radar-dot ${isFulfilled ? "radar-dot-success" : "radar-dot-active"}`} />
+            <span className={`radar-dot ${isDelivered ? "radar-dot-success" : "radar-dot-active"}`} />
             <span className="delivery-partner-name flex-center gap-1">
-              {isFulfilled ? (
+              {isDelivered ? (
                 <span>Doorstep Handover Complete</span>
               ) : order.deliveryPartner ? (
                 <>
@@ -246,19 +280,21 @@ export default function OrderTrackingStepper({ order }) {
             </span>
           </div>
           <div className="delivery-eta-text">
-            <ZapIcon size={12} color={isFulfilled ? "#10b981" : "#d97706"} />
+            <ZapIcon size={12} color={isDelivered ? "#10b981" : "#d97706"} />
             <span>
-              {isFulfilled 
+              {isDelivered 
                 ? "Package verified & delivered to customer" 
+                : isOutForDelivery
+                ? "Rider is en route to your address • Arriving soon"
                 : order.deliveryPartner
-                ? (order.deliveryStatus === "out_for_delivery" 
-                    ? "Rider is en route to your address • Arriving soon" 
-                    : "Rider assigned • Heading to local store for pickup")
-                : isPartiallyFulfilled
-                ? "In Transit • Arriving in ~15-25 mins"
+                ? "Rider assigned • Heading to local store for pickup"
+                : isPacked
+                ? "Packed & ready for pickup • Awaiting rider"
+                : isPartiallyPacked
+                ? "Store preparing & packing items"
                 : "Express Local Delivery • Estimated within 30-45 mins"}
             </span>
-            {!isFulfilled && order.deliveryPartner?.phone && (
+            {!isDelivered && order.deliveryPartner?.phone && (
               <a 
                 href={`tel:${order.deliveryPartner.phone}`} 
                 className="btn btn-secondary btn-sm"
@@ -273,18 +309,18 @@ export default function OrderTrackingStepper({ order }) {
         {/* Secure 4-Digit Doorstep Delivery OTP */}
         <div className="delivery-otp-wrapper">
           <div className="delivery-otp-label">
-            {isFulfilled ? <ShieldCheckIcon size={12} color="#10b981" /> : <KeyIcon size={12} color="#2563eb" />}
-            <span>{isFulfilled ? "Handover Verified" : "Doorstep Delivery OTP"}</span>
+            {isDelivered ? <ShieldCheckIcon size={12} color="#10b981" /> : <KeyIcon size={12} color="#2563eb" />}
+            <span>{isDelivered ? "Handover Verified" : "Doorstep Delivery OTP"}</span>
           </div>
           <div className="delivery-otp-digits" title="Share with delivery partner upon doorstep handover">
             {deliveryOtp.split("").map((digit, idx) => (
-              <span key={idx} className={`otp-digit ${isFulfilled ? "otp-digit-verified" : ""}`}>
+              <span key={idx} className={`otp-digit ${isDelivered ? "otp-digit-verified" : ""}`}>
                 {digit}
               </span>
             ))}
           </div>
           <span className="delivery-otp-subtext">
-            {isFulfilled ? "OTP Verified on Handover" : "Share with courier upon delivery"}
+            {isDelivered ? "OTP Verified on Handover" : "Share with courier upon delivery"}
           </span>
         </div>
       </div>

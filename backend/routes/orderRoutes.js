@@ -53,8 +53,8 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
     const isStandard = deliveryTier === "standard";
     const tier = isStandard ? "standard" : "express";
     const estDeliveryMins = isStandard ? 1440 : 30;
-    const estimatedDelivery = isStandard ? "1–2 Business Days" : "15–30 mins";
-    const courierPartner = isStandard ? "LocalShop Standard CityCourier" : "LocalShop HyperExpress";
+    const deliveryTimeText = isStandard ? "1–2 Business Days" : "15–30 mins";
+    const courier = isStandard ? "LocalShop Standard CityCourier" : "LocalShop HyperExpress";
 
     const order = await Order.create({
       customer: req.user._id,
@@ -66,9 +66,9 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
       paymentId: paymentId || undefined,
       deliveryOtp,
       deliveryTier: tier,
-      estimatedDelivery,
+      estimatedDelivery: deliveryTimeText,
       estimatedDeliveryMinutes: estDeliveryMins,
-      courierPartner,
+      courierPartner: courier,
     });
 
     res.status(201).json(order);
@@ -272,6 +272,47 @@ router.put("/:id/item-status", requireAuth, requireRole("retailer"), async (req,
     item.status = status;
     await order.save();
     res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// PUT /api/orders/:id/retailer-fulfill-all (retailer packs and fulfills all pending items in this order)
+router.put("/:id/retailer-fulfill-all", requireAuth, requireRole("retailer"), async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const retailerItems = order.items.filter(
+      (i) => String(i.retailer) === String(req.user._id) && i.status === "pending"
+    );
+
+    if (retailerItems.length === 0) {
+      return res.status(400).json({ message: "No pending items for this retailer to fulfill" });
+    }
+
+    for (const item of retailerItems) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        if (product.stock < item.qty) {
+          return res.status(400).json({ 
+            message: `Insufficient stock for "${item.name}". Available: ${product.stock}, Required: ${item.qty}` 
+          });
+        }
+        product.stock -= item.qty;
+        if (product.stock < 0) product.stock = 0;
+        await product.save();
+      }
+      item.status = "fulfilled";
+    }
+
+    await order.save();
+    
+    const populated = await Order.findById(order._id)
+      .populate("customer", "name email phone")
+      .populate("deliveryPartner", "name phone vehicleType vehicleNumber");
+
+    res.json({ message: "All items marked as Packed & Ready", order: populated });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

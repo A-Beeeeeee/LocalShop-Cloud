@@ -17,7 +17,7 @@ export default function StatusBadge({ status, label, size = "md" }) {
     if (!label) displayLabel = "Refunded";
   } else if (["fulfilled", "approved", "in-stock", "in_stock", "active", "delivered"].includes(normalized)) {
     variant = "badge-success";
-    if (!label && normalized === "fulfilled") displayLabel = "Fulfilled";
+    if (!label && normalized === "fulfilled") displayLabel = "Packed & Ready";
     if (!label && normalized === "approved") displayLabel = "Approved";
     if (!label && normalized === "delivered") displayLabel = "Delivered";
   } else if (["assigned", "picked_up", "picked-up", "out_for_delivery", "out-for-delivery"].includes(normalized)) {

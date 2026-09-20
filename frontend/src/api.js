@@ -57,6 +57,8 @@ export const api = {
     request(`/orders/${orderId}/item-status`, { method: "PUT", body: payload, auth: true }),
   updateOrderItemStatus: (orderId, productId, status) =>
     request(`/orders/${orderId}/item-status`, { method: "PUT", body: { productId, status }, auth: true }),
+  fulfillEntireOrder: (orderId) =>
+    request(`/orders/${orderId}/retailer-fulfill-all`, { method: "PUT", auth: true }),
   cancelOrder: (orderId, payload = {}) =>
     request(`/orders/${orderId}/cancel`, { method: "PUT", body: payload, auth: true }),
   requestReturn: (orderId, payload) =>
