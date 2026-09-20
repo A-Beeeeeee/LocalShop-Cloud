@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     role: { type: String, enum: ["customer", "retailer", "admin", "delivery"], required: true },
     shopName: { type: String },
+    storeLocality: { type: String, default: "Anna Nagar" }, // e.g. "Anna Nagar", "T. Nagar", "Velachery", "Adyar", "Kelambakkam"
+    storeCity: { type: String, default: "Chennai" },
+    storePincode: { type: String, default: "600040" },
+    storeAddress: { type: String, default: "" },
     vehicleType: { type: String, enum: ["Bike", "Scooter", "EV", "Bicycle", "Van"], default: "Bike" },
     vehicleNumber: { type: String, default: "" },
     isAvailable: { type: Boolean, default: true },

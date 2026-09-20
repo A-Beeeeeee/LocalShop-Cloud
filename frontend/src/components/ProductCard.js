@@ -5,6 +5,7 @@ export default function ProductCard({ product, onAdd, onSelect }) {
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
   const shopName = product.retailer?.shopName || product.retailer?.name || "Local Retailer";
+  const storeLocality = product.retailer?.storeLocality || "Anna Nagar";
 
   return (
     <div 
@@ -63,9 +64,14 @@ export default function ProductCard({ product, onAdd, onSelect }) {
       </div>
 
       <div className="product-content">
-        <div className="product-shop-meta">
-          <StoreIcon size={12} color="#64748b" />
-          <span className="product-shop-name" title={shopName}>{shopName}</span>
+        <div className="product-shop-meta" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+          <div className="flex-center gap-1 truncate" style={{ minWidth: 0 }}>
+            <StoreIcon size={11} color="#64748b" style={{ flexShrink: 0 }} />
+            <span className="product-shop-name truncate" title={`${shopName} • ${storeLocality}`}>{shopName}</span>
+          </div>
+          <span className="badge badge-success text-xs" style={{ fontSize: "9.5px", padding: "1px 5px", flexShrink: 0, fontWeight: 600 }}>
+            📍 {storeLocality}
+          </span>
         </div>
 
         <h3 className="product-title" title={product.name}>{product.name}</h3>

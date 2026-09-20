@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
@@ -21,7 +22,8 @@ import {
   ImageIcon,
   ReceiptIcon,
   BikeIcon,
-  PhoneIcon
+  PhoneIcon,
+  MapPinIcon
 } from "../components/Icons";
 
 const CATEGORIES = ["General", "Groceries", "Apparel", "Home", "Electronics"];
@@ -35,8 +37,8 @@ const SAMPLE_PRESETS = [
   { name: "Ceramic Artisan Coffee Mug", category: "Home", price: 299, stock: 20, imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80" },
 ];
 
-
 export default function RetailerDashboard() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "products" | "orders" | "reports"
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
@@ -393,8 +395,13 @@ export default function RetailerDashboard() {
       {/* Top Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Retailer Dashboard</h1>
-          <p className="page-subtitle">Manage store inventory, orders, and sales performance</p>
+          <div className="flex-center gap-2 flex-wrap">
+            <h1 className="page-title">{user?.shopName || "Retailer Dashboard"}</h1>
+            <span className="badge badge-success text-xs font-semibold flex-center gap-1">
+              <MapPinIcon size={11} /> 📍 {user?.storeLocality || "Anna Nagar"} ({user?.storePincode || "600040"})
+            </span>
+          </div>
+          <p className="page-subtitle">Hyperlocal fulfillment center for {user?.storeLocality || "Anna Nagar"} • 3.5 km delivery radius</p>
         </div>
         <div className="flex-center gap-2">
           <button 

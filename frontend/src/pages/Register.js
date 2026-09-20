@@ -11,6 +11,9 @@ export default function Register() {
     password: "", 
     role: "customer", 
     shopName: "",
+    storeLocality: "Anna Nagar",
+    storePincode: "600040",
+    storeAddress: "",
     vehicleType: "Bike",
     vehicleNumber: ""
   });
@@ -54,6 +57,9 @@ export default function Register() {
         password: form.password,
         role: form.role,
         shopName: form.role === "retailer" ? form.shopName.trim() : undefined,
+        storeLocality: form.role === "retailer" ? form.storeLocality : undefined,
+        storePincode: form.role === "retailer" ? form.storePincode.trim() : undefined,
+        storeAddress: form.role === "retailer" ? form.storeAddress.trim() : undefined,
         vehicleType: form.role === "delivery" ? form.vehicleType : undefined,
         vehicleNumber: form.role === "delivery" ? form.vehicleNumber.trim() : undefined,
       });
@@ -132,18 +138,64 @@ export default function Register() {
           </div>
 
           {form.role === "retailer" && (
-            <div className="form-group">
-              <label className="form-label" htmlFor="reg-shopname">Shop / Business Name</label>
-              <input
-                id="reg-shopname"
-                type="text"
-                required
-                className="form-input"
-                placeholder="Enter shop/business name"
-                value={form.shopName}
-                onChange={(e) => update("shopName", e.target.value)}
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label className="form-label" htmlFor="reg-shopname">Shop / Business Name</label>
+                <input
+                  id="reg-shopname"
+                  type="text"
+                  required
+                  className="form-input"
+                  placeholder="e.g. Sri Krishna Organics, Murugan Kirana"
+                  value={form.shopName}
+                  onChange={(e) => update("shopName", e.target.value)}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="reg-store-locality">Neighborhood / Locality</label>
+                  <select
+                    id="reg-store-locality"
+                    className="form-select"
+                    value={form.storeLocality}
+                    onChange={(e) => update("storeLocality", e.target.value)}
+                  >
+                    <option value="Anna Nagar">Anna Nagar (600040)</option>
+                    <option value="T. Nagar">T. Nagar (600017)</option>
+                    <option value="Velachery">Velachery (600042)</option>
+                    <option value="Adyar">Adyar (600020)</option>
+                    <option value="Kelambakkam">Kelambakkam / OMR (600127)</option>
+                    <option value="Tambaram">Tambaram (600045)</option>
+                    <option value="Mylapore">Mylapore (600004)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="reg-store-pincode">Store Pincode</label>
+                  <input
+                    id="reg-store-pincode"
+                    type="text"
+                    maxLength="6"
+                    className="form-input"
+                    placeholder="e.g. 600040"
+                    value={form.storePincode}
+                    onChange={(e) => update("storePincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="reg-store-addr">Physical Shop Address</label>
+                <input
+                  id="reg-store-addr"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. #14, 2nd Main Road, Near Metro Station"
+                  value={form.storeAddress}
+                  onChange={(e) => update("storeAddress", e.target.value)}
+                />
+              </div>
+            </>
           )}
 
           {form.role === "delivery" && (

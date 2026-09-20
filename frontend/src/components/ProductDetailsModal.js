@@ -72,9 +72,14 @@ export default function ProductDetailsModal({ isOpen, onClose, product, onAdd })
 
         {/* Right Column: Product Specs & Actions */}
         <div className="product-details-info">
-          <div className="product-details-shop-badge">
-            <StoreIcon size={13} color="#2563eb" />
-            <span className="font-semibold text-xs text-primary">{shopName}</span>
+          <div className="product-details-shop-badge" style={{ flexWrap: "wrap", gap: "6px" }}>
+            <div className="flex-center gap-1">
+              <StoreIcon size={13} color="#2563eb" />
+              <span className="font-semibold text-xs text-primary">{shopName}</span>
+            </div>
+            <span className="badge badge-success text-xs" style={{ fontSize: "10px", padding: "1px 6px" }}>
+              📍 {product.retailer?.storeLocality || "Anna Nagar"}
+            </span>
             <span className="badge-verified flex-center gap-1">
               <ShieldCheckIcon size={11} color="#059669" /> Verified Store
             </span>

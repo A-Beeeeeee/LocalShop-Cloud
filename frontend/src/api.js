@@ -40,6 +40,10 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/products${qs ? `?${qs}` : ""}`);
   },
+  getStores: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/products/stores${qs ? `?${qs}` : ""}`);
+  },
   getMyProducts: () => request("/products/mine", { auth: true }),
   createProduct: (payload) => request("/products", { method: "POST", body: payload, auth: true }),
   updateProduct: (id, payload) => request(`/products/${id}`, { method: "PUT", body: payload, auth: true }),

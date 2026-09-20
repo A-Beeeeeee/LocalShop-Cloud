@@ -13,7 +13,7 @@ function signToken(user) {
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role, shopName, phone, vehicleType, vehicleNumber } = req.body;
+    const { name, email, password, role, shopName, storeLocality, storeCity, storePincode, storeAddress, phone, vehicleType, vehicleNumber } = req.body;
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
@@ -31,6 +31,10 @@ router.post("/register", async (req, res) => {
       role,
       phone: phone ? phone.trim() : "",
       shopName: role === "retailer" ? shopName : undefined,
+      storeLocality: role === "retailer" ? (storeLocality || "Anna Nagar").trim() : undefined,
+      storeCity: role === "retailer" ? (storeCity || "Chennai").trim() : undefined,
+      storePincode: role === "retailer" ? (storePincode || "600040").trim() : undefined,
+      storeAddress: role === "retailer" ? (storeAddress || "").trim() : undefined,
       vehicleType: role === "delivery" ? (vehicleType || "Bike") : undefined,
       vehicleNumber: role === "delivery" ? (vehicleNumber || "").trim().toUpperCase() : undefined,
       isAvailable: role === "delivery" ? true : undefined,
@@ -49,6 +53,11 @@ router.post("/register", async (req, res) => {
         email: user.email, 
         role: user.role, 
         phone: user.phone,
+        shopName: user.shopName,
+        storeLocality: user.storeLocality,
+        storeCity: user.storeCity,
+        storePincode: user.storePincode,
+        storeAddress: user.storeAddress,
         vehicleType: user.vehicleType,
         vehicleNumber: user.vehicleNumber,
         isAvailable: user.isAvailable,
@@ -90,6 +99,10 @@ router.post("/login", async (req, res) => {
         role: user.role,
         phone: user.phone || "",
         shopName: user.shopName,
+        storeLocality: user.storeLocality || "Anna Nagar",
+        storeCity: user.storeCity || "Chennai",
+        storePincode: user.storePincode || "600040",
+        storeAddress: user.storeAddress || "",
         vehicleType: user.vehicleType,
         vehicleNumber: user.vehicleNumber,
         isAvailable: user.isAvailable,

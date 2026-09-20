@@ -69,12 +69,15 @@ export function extractUniqueStores(order) {
     const storeKey = retailer?._id ? String(retailer._id) : (retailer?.shopName || retailer?.name || `store_${index}`);
 
     let storeAddress = "";
-    if (retailer?.addresses && retailer.addresses.length > 0) {
+    if (retailer?.storeAddress) {
+      storeAddress = `${retailer.storeAddress}, ${retailer.storeLocality || "Anna Nagar"}, Chennai ${retailer.storePincode || "600040"}`.trim();
+    } else if (retailer?.addresses && retailer.addresses.length > 0) {
       const addr = retailer.addresses[0];
       storeAddress = `${addr.flat || ""}, ${addr.area || ""}, ${addr.city || "Chennai"} ${addr.pincode || ""}`.trim();
     } else {
       const sName = retailer?.shopName || retailer?.name || "Local Merchant";
-      storeAddress = `${sName}, Local Merchant, Chennai, Tamil Nadu`;
+      const sLoc = retailer?.storeLocality || "Anna Nagar";
+      storeAddress = `${sName}, ${sLoc}, Chennai, Tamil Nadu`;
     }
 
     if (!storeMap.has(storeKey)) {
