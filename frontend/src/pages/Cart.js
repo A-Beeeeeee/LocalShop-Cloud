@@ -118,6 +118,17 @@ export default function Cart() {
     }
   }
 
+  function handleRemoveItem(item) {
+    const remaining = cart.items.filter((i) => i.productId !== item.productId);
+    const locs = Array.from(new Set(remaining.map((i) => (i.storeLocality || "Anna Nagar").trim())));
+    cart.removeFromCart(item.productId);
+    if (cart.deliveryTier === "standard" && locs.length === 1) {
+      showToast(`Removed "${item.name}". Order upgraded to ⚡ 15–30 Min Express Delivery (${locs[0]})!`, "success");
+    } else {
+      showToast(`Removed "${item.name}" from cart`, "info");
+    }
+  }
+
   function handleStartCheckout() {
     setError("");
     if (cart.items.length === 0) {
@@ -292,7 +303,7 @@ export default function Cart() {
                     <button
                       type="button"
                       className="btn-icon text-muted"
-                      onClick={() => cart.removeFromCart(item.productId)}
+                      onClick={() => handleRemoveItem(item)}
                       title="Remove item"
                       aria-label="Remove item"
                     >

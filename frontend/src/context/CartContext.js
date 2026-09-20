@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext(null);
 
@@ -8,16 +8,27 @@ export function CartProvider({ children }) {
     return stored ? JSON.parse(stored) : [];
   });
 
-  const [deliveryTier, setDeliveryTier] = useState(() => {
-    return localStorage.getItem("cart_delivery_tier") || "express"; // "express" | "standard"
-  });
+  // Calculate unique localities
+  const uniqueLocalities = Array.from(
+    new Set(items.map((i) => (i.storeLocality || "Anna Nagar").trim()))
+  );
+  const isMultiLocality = uniqueLocalities.length > 1;
+  const deliveryTier = isMultiLocality ? "standard" : "express";
 
-  function persist(nextItems, nextTier = deliveryTier) {
+  function persist(nextItems) {
+    const nextLocs = Array.from(
+      new Set(nextItems.map((i) => (i.storeLocality || "Anna Nagar").trim()))
+    );
+    const nextTier = nextLocs.length > 1 ? "standard" : "express";
     setItems(nextItems);
-    setDeliveryTier(nextTier);
     localStorage.setItem("cart", JSON.stringify(nextItems));
     localStorage.setItem("cart_delivery_tier", nextTier);
   }
+
+  // Ensure stored tier stays in sync with initial items load
+  useEffect(() => {
+    localStorage.setItem("cart_delivery_tier", deliveryTier);
+  }, [deliveryTier]);
 
   /**
    * Adds an item to the cart.
@@ -38,8 +49,8 @@ export function CartProvider({ children }) {
       const existingLocality = (items[0].storeLocality || "Anna Nagar").trim();
       const isCrossLocality = existingLocality.toLowerCase() !== pLocality.toLowerCase();
 
-      // Check if user is trying to add a cross-locality product while in Express mode
-      if (isCrossLocality && deliveryTier === "express" && !force && switchTier !== "standard") {
+      // Check if user is trying to add a cross-locality product without confirmation
+      if (isCrossLocality && !force && switchTier !== "standard") {
         return {
           conflict: true,
           currentLocality: existingLocality,
@@ -51,11 +62,9 @@ export function CartProvider({ children }) {
     }
 
     let nextItems;
-    let nextTier = deliveryTier;
 
     if (force && items.length > 0) {
       // Option 1: Replace cart and keep Express 15-30 min mode in new locality
-      nextTier = "express";
       nextItems = [{
         productId: product._id,
         name: product.name,
@@ -67,11 +76,6 @@ export function CartProvider({ children }) {
         storeLocality: pLocality,
       }];
     } else {
-      // If customer explicitly switched to Standard delivery, update tier
-      if (switchTier === "standard") {
-        nextTier = "standard";
-      }
-
       const existing = items.find((i) => i.productId === product._id);
       if (existing) {
         nextItems = items.map((i) => (i.productId === product._id ? { ...i, qty: i.qty + quantity } : i));
@@ -92,17 +96,14 @@ export function CartProvider({ children }) {
       }
     }
 
-    persist(nextItems, nextTier);
-    return { success: true, tier: nextTier };
+    persist(nextItems);
+    const nextLocs = Array.from(new Set(nextItems.map((i) => (i.storeLocality || "Anna Nagar").trim())));
+    return { success: true, tier: nextLocs.length > 1 ? "standard" : "express" };
   }
 
   function removeFromCart(productId) {
     const remaining = items.filter((i) => i.productId !== productId);
-    if (remaining.length === 0) {
-      persist([], "express");
-    } else {
-      persist(remaining);
-    }
+    persist(remaining);
   }
 
   function setQty(productId, qty) {
@@ -124,20 +125,11 @@ export function CartProvider({ children }) {
   }
 
   function clearCart() {
-    persist([], "express");
-  }
-
-  function setTier(tier) {
-    persist(items, tier);
+    persist([]);
   }
 
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = items.reduce((sum, i) => sum + i.qty, 0);
-
-  // Derived localities
-  const uniqueLocalities = Array.from(new Set(items.map((i) => i.storeLocality || "Anna Nagar")));
-  const isMultiLocality = uniqueLocalities.length > 1;
-  const effectiveTier = isMultiLocality ? "standard" : deliveryTier;
 
   const cartLocality = items.length === 0
     ? null
@@ -158,8 +150,7 @@ export function CartProvider({ children }) {
         total, 
         count,
         cartLocality,
-        deliveryTier: effectiveTier,
-        setTier,
+        deliveryTier,
         isMultiLocality,
         uniqueLocalities
       }}
