@@ -177,7 +177,6 @@ export default function CustomerOrders() {
       ) : (
         <div className="card-stack">
           {orders.map((order) => {
-            const hasPendingItems = order.items?.some((i) => i.status === "pending");
             const allItemsCancelled = order.items?.every((i) => i.status === "cancelled");
             const hasRefundProcessed = order.refundStatus === "processed";
 
@@ -251,8 +250,8 @@ export default function CustomerOrders() {
                       <span className="order-total-val">₹{order.totalAmount}</span>
                     </div>
 
-                    {/* Cancel Whole Order Button if pending and not already cancelled */}
-                    {hasPendingItems && !allItemsCancelled && (
+                    {/* Cancel Whole Order Button if before out for delivery or delivered */}
+                    {order.deliveryStatus !== "delivered" && order.deliveryStatus !== "out_for_delivery" && !allItemsCancelled && (
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm text-danger"
@@ -302,15 +301,21 @@ export default function CustomerOrders() {
                           </td>
                           <td style={{ textAlign: "right" }}>
                             {item.status === "fulfilled" && (
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: "2px 6px", fontSize: "10px" }}
-                                onClick={() => openReturnModal(order._id, item)}
-                                title="Request return or refund"
-                              >
-                                Return / Refund
-                              </button>
+                              order.deliveryStatus === "delivered" ? (
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ padding: "2px 6px", fontSize: "10px" }}
+                                  onClick={() => openReturnModal(order._id, item)}
+                                  title="Request return or refund"
+                                >
+                                  Return / Refund
+                                </button>
+                              ) : (
+                                <span className="text-muted text-xs" style={{ fontSize: "10px" }}>
+                                  Packed & Ready
+                                </span>
+                              )
                             )}
                             {item.status === "return_requested" && (
                               <span className="text-muted text-xs" style={{ fontSize: "10px" }}>
