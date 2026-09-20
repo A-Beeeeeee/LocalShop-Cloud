@@ -8,26 +8,38 @@ export function CartProvider({ children }) {
     return stored ? JSON.parse(stored) : [];
   });
 
-  function persist(next) {
-    setItems(next);
-    localStorage.setItem("cart", JSON.stringify(next));
+  const [deliveryTier, setDeliveryTier] = useState(() => {
+    return localStorage.getItem("cart_delivery_tier") || "express"; // "express" | "standard"
+  });
+
+  function persist(nextItems, nextTier = deliveryTier) {
+    setItems(nextItems);
+    setDeliveryTier(nextTier);
+    localStorage.setItem("cart", JSON.stringify(nextItems));
+    localStorage.setItem("cart_delivery_tier", nextTier);
   }
 
   /**
    * Adds an item to the cart.
-   * Enforces Hyperlocal Geofencing by ensuring all items in a single cart
-   * originate from stores within the same neighborhood cluster (e.g. Anna Nagar).
-   * 
-   * If a conflict is detected across different city zones (e.g. Velachery vs T. Nagar),
-   * returns a conflict descriptor unless force=true is passed.
+   * Supports two delivery modes:
+   * 1. Express (15–30 mins): Restricted to stores within the same 3–5 km locality.
+   * 2. Standard (1–2 Days): Allows mixing stores across different city zones.
+   *
+   * @param {Object} product - Product to add
+   * @param {boolean} force - If true, replaces cart with new item for Express in new locality
+   * @param {number} quantity - Quantity of item to add
+   * @param {string|null} switchTier - "standard" to merge cross-zone items and switch to 1–2 day delivery
    */
-  function addToCart(product, force = false, quantity = 1) {
+  function addToCart(product, force = false, quantity = 1, switchTier = null) {
     const pLocality = (product.retailer?.storeLocality || "Anna Nagar").trim();
     const pShopName = product.retailer?.shopName || product.retailer?.name || "Local Retailer";
 
-    if (items.length > 0 && !force) {
+    if (items.length > 0) {
       const existingLocality = (items[0].storeLocality || "Anna Nagar").trim();
-      if (existingLocality.toLowerCase() !== pLocality.toLowerCase()) {
+      const isCrossLocality = existingLocality.toLowerCase() !== pLocality.toLowerCase();
+
+      // Check if user is trying to add a cross-locality product while in Express mode
+      if (isCrossLocality && deliveryTier === "express" && !force && switchTier !== "standard") {
         return {
           conflict: true,
           currentLocality: existingLocality,
@@ -38,10 +50,13 @@ export function CartProvider({ children }) {
       }
     }
 
-    let next;
+    let nextItems;
+    let nextTier = deliveryTier;
+
     if (force && items.length > 0) {
-      // Replace cart with new item from new locality
-      next = [{
+      // Option 1: Replace cart and keep Express 15-30 min mode in new locality
+      nextTier = "express";
+      nextItems = [{
         productId: product._id,
         name: product.name,
         price: product.price,
@@ -52,11 +67,16 @@ export function CartProvider({ children }) {
         storeLocality: pLocality,
       }];
     } else {
+      // If customer explicitly switched to Standard delivery, update tier
+      if (switchTier === "standard") {
+        nextTier = "standard";
+      }
+
       const existing = items.find((i) => i.productId === product._id);
       if (existing) {
-        next = items.map((i) => (i.productId === product._id ? { ...i, qty: i.qty + quantity } : i));
+        nextItems = items.map((i) => (i.productId === product._id ? { ...i, qty: i.qty + quantity } : i));
       } else {
-        next = [
+        nextItems = [
           ...items,
           {
             productId: product._id,
@@ -72,12 +92,17 @@ export function CartProvider({ children }) {
       }
     }
 
-    persist(next);
-    return { success: true };
+    persist(nextItems, nextTier);
+    return { success: true, tier: nextTier };
   }
 
   function removeFromCart(productId) {
-    persist(items.filter((i) => i.productId !== productId));
+    const remaining = items.filter((i) => i.productId !== productId);
+    if (remaining.length === 0) {
+      persist([], "express");
+    } else {
+      persist(remaining);
+    }
   }
 
   function setQty(productId, qty) {
@@ -99,12 +124,26 @@ export function CartProvider({ children }) {
   }
 
   function clearCart() {
-    persist([]);
+    persist([], "express");
+  }
+
+  function setTier(tier) {
+    persist(items, tier);
   }
 
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = items.reduce((sum, i) => sum + i.qty, 0);
-  const cartLocality = items.length > 0 ? (items[0].storeLocality || "Anna Nagar") : null;
+
+  // Derived localities
+  const uniqueLocalities = Array.from(new Set(items.map((i) => i.storeLocality || "Anna Nagar")));
+  const isMultiLocality = uniqueLocalities.length > 1;
+  const effectiveTier = isMultiLocality ? "standard" : deliveryTier;
+
+  const cartLocality = items.length === 0
+    ? null
+    : isMultiLocality
+    ? `City-Wide (${uniqueLocalities.join(" + ")})`
+    : items[0].storeLocality || "Anna Nagar";
 
   return (
     <CartContext.Provider
@@ -118,7 +157,11 @@ export function CartProvider({ children }) {
         clearCart, 
         total, 
         count,
-        cartLocality 
+        cartLocality,
+        deliveryTier: effectiveTier,
+        setTier,
+        isMultiLocality,
+        uniqueLocalities
       }}
     >
       {children}

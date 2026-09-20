@@ -65,7 +65,14 @@ export default function Storefront() {
   function handleConfirmReplaceCart() {
     if (!conflictModalData?.product) return;
     cart.addToCart(conflictModalData.product, true, conflictModalData.qty || 1);
-    showToast(`Cart refreshed for ${conflictModalData.newLocality} • Added "${conflictModalData.product.name}"`, "success");
+    showToast(`Cart refreshed for ${conflictModalData.newLocality} (15–30 min express) • Added "${conflictModalData.product.name}"`, "success");
+    setConflictModalData(null);
+  }
+
+  function handleSwitchToStandardDelivery() {
+    if (!conflictModalData?.product) return;
+    cart.addToCart(conflictModalData.product, false, conflictModalData.qty || 1, "standard");
+    showToast(`Multi-Locality Order: Switched to Standard 1–2 Day Delivery • Added "${conflictModalData.product.name}"`, "success");
     setConflictModalData(null);
   }
 
@@ -513,8 +520,8 @@ export default function Storefront() {
       <Modal
         isOpen={Boolean(conflictModalData)}
         onClose={() => setConflictModalData(null)}
-        title="Start Fresh Order in New Locality?"
-        maxWidth="460px"
+        title="Cross-Locality Order Detected"
+        maxWidth="520px"
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{
@@ -527,35 +534,100 @@ export default function Storefront() {
             alignItems: "flex-start"
           }}>
             <AlertTriangleIcon size={22} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
-            <div style={{ fontSize: "12.5px", color: "var(--color-text)" }}>
-              <div style={{ fontWeight: 700, marginBottom: "4px", fontSize: "13px" }}>
-                Different Hyperlocal Zone Detected
+            <div style={{ fontSize: "12px", color: "var(--color-text)" }}>
+              <div style={{ fontWeight: 700, marginBottom: "3px", fontSize: "13px" }}>
+                Different Neighborhood Zones
               </div>
-              <p style={{ margin: "0 0 6px 0", lineHeight: 1.45, color: "var(--color-text-muted)" }}>
-                Your cart currently contains items from <strong>{conflictModalData?.currentShop}</strong> in <strong>📍 {conflictModalData?.currentLocality}</strong>.
+              <p style={{ margin: "0 0 4px 0", lineHeight: 1.4, color: "var(--color-text-muted)" }}>
+                Your cart has items from <strong>{conflictModalData?.currentShop}</strong> in <strong>📍 {conflictModalData?.currentLocality}</strong>.
               </p>
-              <p style={{ margin: 0, lineHeight: 1.45, color: "var(--color-text-muted)" }}>
-                To maintain our <strong>15–30 min express delivery SLA</strong>, each order must originate from stores within the same 3–5 km radius. Adding items from <strong>{conflictModalData?.newShop}</strong> in <strong>📍 {conflictModalData?.newLocality}</strong> will replace your active cart.
+              <p style={{ margin: 0, lineHeight: 1.4, color: "var(--color-text-muted)" }}>
+                You are adding <em>"{conflictModalData?.product?.name}"</em> from <strong>{conflictModalData?.newShop}</strong> in <strong>📍 {conflictModalData?.newLocality}</strong>.
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {/* OPTION A: Multi-store across city (1-2 day delivery) */}
+            <div
+              style={{
+                border: "1.5px solid var(--color-primary)",
+                backgroundColor: "var(--color-surface)",
+                borderRadius: "var(--radius-md)",
+                padding: "12px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <div className="flex-between">
+                <div className="flex-center gap-2">
+                  <span style={{ fontSize: "16px" }}>📦</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "12.5px", color: "var(--color-text)" }}>
+                      Combine Multi-Store Order (Standard 1–2 Day Delivery)
+                    </div>
+                    <div className="text-muted text-xs" style={{ marginTop: "2px" }}>
+                      Keep existing items and add this product. Order will be dispatched via city-wide courier.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleSwitchToStandardDelivery}
+                style={{ alignSelf: "flex-end", padding: "5px 14px", fontSize: "11.5px" }}
+              >
+                📦 Select 1–2 Day Delivery & Add Item
+              </button>
+            </div>
+
+            {/* OPTION B: Start fresh for Express 15-30 mins */}
+            <div
+              style={{
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-surface)",
+                borderRadius: "var(--radius-md)",
+                padding: "12px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px"
+              }}
+            >
+              <div className="flex-between">
+                <div className="flex-center gap-2">
+                  <span style={{ fontSize: "16px" }}>⚡</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "12.5px", color: "var(--color-text)" }}>
+                      Maintain 15–30 Min Express Delivery
+                    </div>
+                    <div className="text-muted text-xs" style={{ marginTop: "2px" }}>
+                      Clear existing cart and order strictly from <strong>{conflictModalData?.newLocality}</strong> stores.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleConfirmReplaceCart}
+                style={{ alignSelf: "flex-end", padding: "5px 14px", fontSize: "11.5px" }}
+              >
+                ⚡ Clear & Order Express ({conflictModalData?.newLocality})
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2px" }}>
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn-ghost btn-sm text-muted"
               onClick={() => setConflictModalData(null)}
-              style={{ padding: "6px 14px", fontSize: "12px" }}
+              style={{ fontSize: "11.5px" }}
             >
-              Keep Current Cart
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleConfirmReplaceCart}
-              style={{ padding: "6px 14px", fontSize: "12px" }}
-            >
-              Start Fresh & Add Item
+              Cancel & Keep Current Cart
             </button>
           </div>
         </div>

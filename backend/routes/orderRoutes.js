@@ -9,7 +9,7 @@ const router = express.Router();
 // body: { items: [{ productId, qty }], address }
 router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
   try {
-    const { items, address, paymentMethod, paymentStatus, paymentId } = req.body;
+    const { items, address, paymentMethod, paymentStatus, paymentId, deliveryTier } = req.body;
     if (!items || !items.length || !address) {
       return res.status(400).json({ message: "Items and address are required" });
     }
@@ -43,6 +43,12 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
     const status = paymentStatus || (method === "razorpay" ? "paid" : "pending");
     const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
 
+    const isStandard = deliveryTier === "standard";
+    const tier = isStandard ? "standard" : "express";
+    const estDeliveryMins = isStandard ? 1440 : 30;
+    const estDelivery = isStandard ? "1–2 Business Days" : "15–30 mins";
+    const courierPartner = isStandard ? "LocalShop Standard CityCourier" : "LocalShop HyperExpress";
+
     const order = await Order.create({
       customer: req.user._id,
       items: orderItems,
@@ -52,8 +58,10 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
       paymentStatus: status,
       paymentId: paymentId || undefined,
       deliveryOtp,
-      estimatedDeliveryMinutes: 30,
-      courierPartner: "LocalShop HyperExpress",
+      deliveryTier: tier,
+      estimatedDelivery,
+      estimatedDeliveryMinutes: estDeliveryMins,
+      courierPartner,
     });
 
     res.status(201).json(order);

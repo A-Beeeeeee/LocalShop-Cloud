@@ -27,6 +27,8 @@ const orderSchema = new mongoose.Schema(
     refundAmount: { type: Number, default: 0 },
     cancellationReason: { type: String, default: "" },
     deliveryOtp: { type: String, default: "" },
+    deliveryTier: { type: String, enum: ["express", "standard"], default: "express" },
+    estimatedDelivery: { type: String, default: "15–30 mins" },
     estimatedDeliveryMinutes: { type: Number, default: 30 },
     courierPartner: { type: String, default: "LocalShop HyperExpress" },
     deliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

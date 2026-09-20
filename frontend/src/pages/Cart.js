@@ -146,6 +146,7 @@ export default function Cart() {
         paymentMethod: method,
         paymentStatus: status,
         paymentId: paymentId || undefined,
+        deliveryTier: cart.deliveryTier || "express",
       });
       cart.clearCart();
       setIsRazorpayModalOpen(false);
@@ -226,11 +227,15 @@ export default function Cart() {
             <div className="card-header flex-between" style={{ flexWrap: "wrap", gap: "8px" }}>
               <div className="flex-center gap-2">
                 <h2 className="card-title">Cart Items ({cart.count})</h2>
-                {cart.cartLocality && (
-                  <span className="badge badge-success text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
-                    📍 {cart.cartLocality} (3.5 km Express Zone)
+                {cart.deliveryTier === "standard" ? (
+                  <span className="badge badge-primary text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
+                    📦 Standard City Delivery (1–2 Days) • Multi-Store
                   </span>
-                )}
+                ) : cart.cartLocality ? (
+                  <span className="badge badge-success text-xs font-bold" style={{ fontSize: "11px", padding: "2px 8px" }}>
+                    ⚡ 15–30 Min Express • 📍 {cart.cartLocality}
+                  </span>
+                ) : null}
               </div>
               <span className="text-muted text-xs">Total items: {cart.count}</span>
             </div>
@@ -496,7 +501,13 @@ export default function Cart() {
               </span>
             </div>
             <div className="summary-row">
-              <span className="text-muted">Delivery</span>
+              <span className="text-muted">Delivery Speed</span>
+              <span className="font-semibold" style={{ color: cart.deliveryTier === "standard" ? "var(--color-primary)" : "#10b981", fontSize: "11.5px" }}>
+                {cart.deliveryTier === "standard" ? "📦 1–2 Days (Standard City-Wide)" : "⚡ 15–30 Mins (Hyperlocal Express)"}
+              </span>
+            </div>
+            <div className="summary-row">
+              <span className="text-muted">Delivery Fee</span>
               <span className="text-success font-semibold">FREE</span>
             </div>
             <div className="summary-divider" />

@@ -213,6 +213,19 @@ export default function CustomerOrders() {
                       </span>
                     </div>
 
+                    {/* Delivery Tier / SLA Badge */}
+                    <div className="order-meta-item" style={{ display: "inline-flex", alignItems: "center" }}>
+                      {order.deliveryTier === "standard" ? (
+                        <span className="badge badge-primary text-xs font-bold" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                          📦 Standard (1–2 Days)
+                        </span>
+                      ) : (
+                        <span className="badge badge-success text-xs font-bold" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                          ⚡ Hyperlocal (15–30 Mins)
+                        </span>
+                      )}
+                    </div>
+
                     {/* Refund Badge if applicable */}
                     {hasRefundProcessed && (
                       <span className="badge badge-retailer text-xs" style={{ fontSize: "10px", padding: "1px 5px" }}>
