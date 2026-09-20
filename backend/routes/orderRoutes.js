@@ -1,6 +1,7 @@
 const express = require("express");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const User = require("../models/User");
 const { requireAuth, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
@@ -29,9 +30,15 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
         });
       }
       
+      let retailerId = product.retailer;
+      if (!retailerId) {
+        const defaultRetailer = await User.findOne({ role: "retailer" });
+        retailerId = defaultRetailer ? defaultRetailer._id : req.user._id;
+      }
+
       orderItems.push({
         product: product._id,
-        retailer: product.retailer,
+        retailer: retailerId,
         name: product.name,
         price: product.price,
         qty,
@@ -66,7 +73,8 @@ router.post("/", requireAuth, requireRole("customer"), async (req, res) => {
 
     res.status(201).json(order);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Order placement error:", err);
+    res.status(500).json({ message: err.message || "Failed to place order", error: err.message });
   }
 });
 
